@@ -29,7 +29,7 @@ conda env list
 
 # try to reactivate env to test it
 conda activate r_finemap
-Rscript ../scripts/s01_sumstat_munging.R
+Rscript ../scripts/s01_sumstat_munging.R 
 conda deactivate
 
 ```
