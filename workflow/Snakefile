@@ -1,0 +1,52 @@
+from pathlib import Path
+
+configfile: "../conf/config_finemap.yaml"
+
+
+def ws_path(file_path):
+    return str(Path(config.get("path_base"), file_path))
+
+def db_path(file_path):
+    return str(Path(config.get("path_data"), file_path))
+
+def ss_path(file_path):
+    return str(Path(config.get("path_pwas"), file_path))
+
+
+rule all:
+    input:
+        expand(
+            ws_path("output/munge/seq.{i}_dataset.rds"),
+            i=[i for i in config["sample_seqids"]]
+        )
+
+
+rule munge_sumstats:
+    input:
+        ifile = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz")
+    output:
+        ofile = ws_path("output/munge/seq.{i}_dataset.rds")
+    params:
+        ifile = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz"),
+        codes = ws_path("workflow/script/"),
+        seque = "seq.{i}"
+    log:
+        ws_path("logs/munge/seq.{i}.log")
+#    container:
+#        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    shell:
+        """
+        source ~/.bashrc && \
+        conda activate finemap &&  \
+        Rscript scripts/s01_sumstat_munging.R  \
+            --pipeline_path {params.codes}  \
+            --input {input.ifile}  \
+            --is_molQTL FALSE  \
+            --type quant  \
+            --s NA  \
+            --study_id {params.seque}  \
+            --out {output.ofile}
+        """
+
+
+
