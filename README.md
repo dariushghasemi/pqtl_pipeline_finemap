@@ -35,3 +35,7 @@ conda deactivate
 ```
 
 - First step is tested. Second is ongoing! (19:00, Fri, 12-Apr-24)
+
+- Configuration and snakefile were created to integrate the codes into the pipeline (23:50, Sun, 14-Apr-24)!
+
+- 
