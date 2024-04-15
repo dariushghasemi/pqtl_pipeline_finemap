@@ -38,4 +38,6 @@ conda deactivate
 
 - Configuration and snakefile were created to integrate the codes into the pipeline (23:50, Sun, 14-Apr-24)!
 
-- 
+- Lunching the three first steps of the workflow on slurm integrated into snakemake pipeline (03:15, Mon, 15-Apr-24).
+
+Dariush

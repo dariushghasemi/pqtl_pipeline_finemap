@@ -2,6 +2,7 @@ from pathlib import Path
 
 configfile: "../conf/config_finemap.yaml"
 
+seqid = config["sample_seqids"]
 
 def ws_path(file_path):
     return str(Path(config.get("path_base"), file_path))
@@ -16,8 +17,8 @@ def ss_path(file_path):
 rule all:
     input:
         expand(
-            ws_path("output/munge/seq.{i}_dataset.rds"),
-            i=[i for i in config["sample_seqids"]]
+            ws_path("output/break/seq.{i}_loci.tsv"), i = seqid
+            #i=[i for i in config["sample_seqids"]]
         )
 
 
@@ -27,26 +28,82 @@ rule munge_sumstats:
     output:
         ofile = ws_path("output/munge/seq.{i}_dataset.rds")
     params:
-        ifile = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz"),
-        codes = ws_path("workflow/script/"),
-        seque = "seq.{i}"
+        codes = config.get("path_code"),
+        ofile = ws_path("output/munge/seq.{i}")
     log:
         ws_path("logs/munge/seq.{i}.log")
+    resources:
+        mem_mb = 16000, runtime = 60
+#    conda:
+#        "envs/r_environment.yml"
 #    container:
 #        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     shell:
         """
         source ~/.bashrc && \
-        conda activate finemap &&  \
+        conda activate r_finemap &&  \
         Rscript scripts/s01_sumstat_munging.R  \
             --pipeline_path {params.codes}  \
             --input {input.ifile}  \
             --is_molQTL FALSE  \
             --type quant  \
             --s NA  \
-            --study_id {params.seque}  \
-            --out {output.ofile}
+            --study_id {params.ofile}
         """
 
 
+rule align_sumstats:
+    input:
+        ifile = ws_path("output/munge/seq.{i}_dataset.rds")
+    output:
+        ifile = ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"),
+        #lfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_snplist.tsv"), i = seqid, chrom = range(1, 23)),
+        #mfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_map.tsv"), i = seqid, chrom = range(1, 23))
+    params:
+        codes = config.get("path_code"),
+        ofile = ws_path("output/align/seq.{i}/seq.{i}"),
+        chro  = "{chrom}"
+    #log:
+    #    ws_path("logs/align/seq.{i}_chr{chrom}.log")
+    #conda:
+    #    "envs/r_envirnonment.yml"
+    resources:
+        mem_mb = 8000, runtime = 60
+    shell:
+        """
+        source ~/.bashrc && \
+        conda activate r_finemap &&  \
+        Rscript scripts/s02_sumstat_alignment.R  \
+            --pipeline_path {params.codes}  \
+            --dataset {input.ifile}  \
+            --chr_tabix {params.chro}  \
+            --grch 38  \
+            --study_id {params.ofile}
+        """
 
+
+rule break_locus:
+    input:
+        ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23)),
+        #lfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_snplist.tsv"), i = seqid, chrom = range(1, 23)),
+        #mfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_map.tsv"), i = seqid, chrom = range(1, 23))
+    output:
+        ofile = ws_path("output/break/seq.{i}_loci.tsv")
+    params:
+        codes = config.get("path_code"),
+        ofile = ws_path("output/break/seq.{i}"),
+        seque = "seq.{i}"
+    log:
+        ws_path("logs/break/seq.{i}.log")
+    resources:
+        mem_mb = 8000, runtime = 60
+    shell:
+        """
+        source ~/.bashrc && \
+        conda activate r_finemap &&  \
+        Rscript scripts/s03_locus_breaker.R  \
+            --pipeline_path {params.codes}  \
+            --study_id {params.ofile}
+            --p_thresh1 5e-06  \
+            --p_thresh2 1e-04
+        """
