@@ -29,8 +29,14 @@ pwas=/exchange/healthds/pQTL/results/INTERVAL_OLD/harmonized_sumstats/outputs/se
 #     --chr_tabix 22
 
 
-Rscript s03_locus_breaker.R  \
-    --pipeline_path /home/dariush.ghasemi/projects/pqtl_pipeline_finemap/workflow/scripts/  \
-    --study_id seq.7930.3  \
-    --p_thresh1 5e-06  \
-    --p_thresh2 1e-04
+# Rscript s03_locus_breaker.R  \
+#     --pipeline_path /home/dariush.ghasemi/projects/pqtl_pipeline_finemap/workflow/scripts/  \
+#     --study_id seq.7930.3  \
+#     --p_thresh1 5e-06  \
+#     --p_thresh2 1e-04
+
+Rscript scripts/s03_locus_breaker.R  \
+    --pipeline_path /home/dariush.ghasemi/projects/pqtl_pipeline_finemap/workflow/scripts/ \
+    --p_thresh1 5e-06 --p_thresh2 1e-04  \
+    --study_id /home/dariush.ghasemi/projects/pqtl_pipeline_finemap/output/align/seq.13124.20  \
+    --outdir /home/dariush.ghasemi/projects/pqtl_pipeline_finemap/output/break/seq.13124.20/seq.13124.20

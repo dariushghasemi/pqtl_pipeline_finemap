@@ -18,8 +18,7 @@ rule all:
     input:
         expand(
             ws_path("output/break/seq.{i}_loci.tsv"), i = seqid
-            #i=[i for i in config["sample_seqids"]]
-        )
+            )
 
 
 rule munge_sumstats:
@@ -84,14 +83,14 @@ rule align_sumstats:
 
 rule break_locus:
     input:
-        ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23)),
-        #lfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_snplist.tsv"), i = seqid, chrom = range(1, 23)),
-        #mfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_map.tsv"), i = seqid, chrom = range(1, 23))
+        ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23))
     output:
-        ofile = ws_path("output/break/seq.{i}_loci.tsv")
+        ofile = ws_path("output/break/seq.{i}_loci.tsv"),
+        sfile = ws_path("output/break/seq.{i}_dataset_aligned.tsv.gz")
     params:
         codes = config.get("path_code"),
-        ofile = ws_path("output/break/seq.{i}"),
+        ifile = ws_path("output/align/seq.{i}/seq.{i}"),
+        ofile = ws_path("output/break/seq.{i}/seq.{i}"),
         seque = "seq.{i}"
     log:
         ws_path("logs/break/seq.{i}.log")
@@ -103,7 +102,29 @@ rule break_locus:
         conda activate r_finemap &&  \
         Rscript scripts/s03_locus_breaker.R  \
             --pipeline_path {params.codes}  \
-            --study_id {params.ofile}
+            --study_id {params.ifile}
             --p_thresh1 5e-06  \
-            --p_thresh2 1e-04
+            --p_thresh2 1e-04  \
+            --outdir {params.ofile}  2> {log}
         """
+
+
+# rule run_cojo:
+#     input:
+
+#     output:
+
+#     params:
+
+#     log:
+
+#     resources:
+
+#     shell:
+#         """
+#         source ~/.bashrc && \
+#         conda activate r_finemap &&  \
+#         Rscript scripts/s04_cojo_finemapping.R  \
+#             --pipeline_path {params.codes}  \
+#             --study_id {params.ifile}
+#         """
