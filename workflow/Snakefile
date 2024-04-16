@@ -17,7 +17,8 @@ def ss_path(file_path):
 rule all:
     input:
         expand(
-            ws_path("output/break/seq.{i}_loci.tsv"), i = seqid
+            #ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
+            ws_path("logs/cojo/seq.{i}.log"), i = seqid
             )
 
 
@@ -85,8 +86,8 @@ rule break_locus:
     input:
         ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23))
     output:
-        ofile = ws_path("output/break/seq.{i}_loci.tsv"),
-        sfile = ws_path("output/break/seq.{i}_dataset_aligned.tsv.gz")
+        ofile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
+        #sfile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
     params:
         codes = config.get("path_code"),
         ifile = ws_path("output/align/seq.{i}/seq.{i}"),
@@ -102,29 +103,42 @@ rule break_locus:
         conda activate r_finemap &&  \
         Rscript scripts/s03_locus_breaker.R  \
             --pipeline_path {params.codes}  \
-            --study_id {params.ifile}
+            --study_id {params.ifile}  \
             --p_thresh1 5e-06  \
             --p_thresh2 1e-04  \
             --outdir {params.ofile}  2> {log}
         """
 
 
-# rule run_cojo:
-#     input:
+rule run_cojo:
+    input:
+        ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
+    output:
+        #ofile = ws_path("output/cojo/seq.{i}/seq.{i}")
+        ws_path("logs/cojo/seq.{i}.log")
+    params:
+        codes = config.get("path_code"),
+        geno  = config.get("path_geno"),
+        ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
+        chr = 9, beg = 136014227, end = 136466717,
+        #seque = "seq.{i}"
+    log:
+        ws_path("logs/cojo/seq.{i}.log")
+    resources:
+        mem_mb = 8000, runtime = 60
+    shell:
+        """
+        source ~/.bashrc && \
+        conda activate r_finemap &&  \
+        Rscript scripts/s04_cojo_finemapping.R  \
+            --pipeline_path {params.codes}  \
+            --dataset_aligned {input.ifile}  \
+            --study_id {params.ofile}  \
+            --chr   {params.chr}  \
+            --start {params.beg}  \
+            --end   {params.end}  \
+            --bfile {params.geno} \
+            --phenotype_id full  \
+            --nf_hcoloc_v no_nf  2> {log}
+        """
 
-#     output:
-
-#     params:
-
-#     log:
-
-#     resources:
-
-#     shell:
-#         """
-#         source ~/.bashrc && \
-#         conda activate r_finemap &&  \
-#         Rscript scripts/s04_cojo_finemapping.R  \
-#             --pipeline_path {params.codes}  \
-#             --study_id {params.ifile}
-#         """
