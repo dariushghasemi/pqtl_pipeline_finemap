@@ -121,6 +121,7 @@ rule run_cojo:
         geno  = config.get("path_geno"),
         ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
         chr = 9, beg = 136014227, end = 136466717,
+        #chr = 15, beg = 74136827, end = 75246105,
         #seque = "seq.{i}"
     log:
         ws_path("logs/cojo/seq.{i}.log")

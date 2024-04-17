@@ -3,7 +3,7 @@ jobs: 250
 software-deployment-method:
    - conda
 #   - apptainer
-retries: 1
+retries: 0
 
 # Cluster submission
 jobname: "{jobid}.{rule}"

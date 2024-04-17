@@ -1,6 +1,8 @@
-workflow/scripts/
+#workflow/scripts/
 workflow/logs/
 workflow/.snakemake/
 output/
 *.log
 .snakemake/
+*.gcount
+*.snp.list
