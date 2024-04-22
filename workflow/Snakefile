@@ -19,7 +19,8 @@ rule all:
         expand(
             #ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
             ws_path("logs/cojo/seq.{i}.log"), i = seqid
-            )
+            ),
+        "condition_data_chr9_up.rds"
 
 
 rule munge_sumstats:
@@ -87,7 +88,7 @@ rule break_locus:
         ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23))
     output:
         ofile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-        #sfile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
+        sfile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
     params:
         codes = config.get("path_code"),
         ifile = ws_path("output/align/seq.{i}/seq.{i}"),
@@ -110,19 +111,20 @@ rule break_locus:
         """
 
 
-rule run_cojo:
+rule run_cojo2:
     input:
         ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
     output:
         #ofile = ws_path("output/cojo/seq.{i}/seq.{i}")
+        ofile = "condition_data_chr9_up.rds",
         ws_path("logs/cojo/seq.{i}.log")
     params:
         codes = config.get("path_code"),
         geno  = config.get("path_geno"),
         ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
         chr = 9, beg = 136014227, end = 136466717,
-        #chr = 15, beg = 74136827, end = 75246105,
-        #seque = "seq.{i}"
+        #chr = 15, beg = 74136827, end = 75246105, 
+        ppp = 0.99, #seque = "seq.{i}"
     log:
         ws_path("logs/cojo/seq.{i}.log")
     resources:
@@ -139,6 +141,7 @@ rule run_cojo:
             --start {params.beg}  \
             --end   {params.end}  \
             --bfile {params.geno} \
+            --cs_thresh {params.ppp}  \
             --phenotype_id full  \
             --nf_hcoloc_v no_nf  2> {log}
         """

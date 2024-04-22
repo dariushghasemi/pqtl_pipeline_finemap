@@ -40,4 +40,6 @@ conda deactivate
 
 - Lunching the three first steps of the workflow on slurm integrated into snakemake pipeline (03:15, Mon, 15-Apr-24).
 
+- Step four was also debugged after integrating t
+
 Dariush

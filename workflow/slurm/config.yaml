@@ -18,7 +18,7 @@ printshellcmds: True
 scheduler: ilp
 
 default-resources:
-    slurm_partition: cpuq #cpu-interactive
+    slurm_partition: cpuq
     #slurm_account: ${USER}
     mem_mb: attempt * 512
     threads: 1
