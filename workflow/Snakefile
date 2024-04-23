@@ -1,4 +1,5 @@
 from pathlib import Path
+import pandas as pd
 
 configfile: "../conf/config_finemap.yaml"
 
@@ -13,14 +14,49 @@ def db_path(file_path):
 def ss_path(file_path):
     return str(Path(config.get("path_pwas"), file_path))
 
+# def extract_chr_beg_end(wildcards):
+#     tfile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv") #.format(i=wildcards.i))
+#     df = pd.read_csv(tfile.format(i=wildcards.i), sep="\t", usecols=["chr", "start", "end"])
+#     chr_beg_end_list = [
+#        {"chr": row["chr"], "beg": row["start"], "end": row["end"]}
+#        for _, row in df.iterrows()
+#     ]
+#     return chr_beg_end_list
+
+# def extract_chr_beg_end(wildcards):
+#     tfile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv".format(i=wildcards.i))
+#     df = pd.read_csv(tfile, sep="\t", usecols=["chr", "start", "end"])
+#     chr_beg_end_list = df.to_dict("records")
+#     return chr_beg_end_list
+
+def extract_chr_beg_end(i):
+    tfile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv".format(i, i))
+    df = pd.read_csv(tfile, sep="\t", usecols=["chr", "start", "end"])
+    chr_beg_end_list = df.to_dict("records")
+    return chr_beg_end_list
 
 rule all:
     input:
         expand(
             #ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-            ws_path("logs/cojo/seq.{i}.log"), i = seqid
+            ws_path("logs/cojo/seq.{i}/{chr}_{beg}_{end}.log"), 
+            i = seqid,
+            chr_beg_end=extract_chr_beg_end(wildcards.i),
+            chr="{chr_beg_end.chr}",
+            beg="{chr_beg_end.beg}",
+            end="{chr_beg_end.end}"
             ),
-        "condition_data_chr9_up.rds"
+        expand(
+            ws_path("output/cojo/seq.{i}/{chr}_{beg}_{end}/"), i = seqid
+            ),
+        # expand(
+        #     ws_path("output/cojo/seq.{i}/{chr}_{beg}_{end}.log"),
+        #     i = seqid,
+        #     chr_beg_end=extract_chr_beg_end,
+        #     chr="{chr}",
+        #     beg="{beg}",
+        #     end="{end}"
+        #     )
 
 
 rule munge_sumstats:
@@ -111,38 +147,164 @@ rule break_locus:
         """
 
 
-rule run_cojo2:
-    input:
-        ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
+# rule run_cojo:
+#     input:
+#         ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
+#     output:
+#         odir = ws_path("output/cojo/seq.{i}/"),
+#         log = ws_path("logs/cojo/seq.{i}.log")
+#     params:
+#         codes = config.get("path_code"),
+#         geno  = config.get("path_geno"),
+#         ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
+#         #chr = 9, beg = 136014227, end = 136466717,
+#         chr = 15, beg = 74136827, end = 75246105, 
+#         ppp = 0.99, #seque = "seq.{i}"
+#     log:
+#         ws_path("logs/cojo/seq.{i}.log")
+#     resources:
+#         mem_mb = 8000, runtime = 60
+#     shell:
+#         """
+#         source ~/.bashrc && \
+#         conda activate r_finemap &&  \
+#         Rscript scripts/s04_cojo_finemapping.R  \
+#             --pipeline_path   {params.codes}  \
+#             --dataset_aligned {input.ifile}  \
+#             --study_id {params.ofile}  \
+#             --chr   {params.chr}  \
+#             --start {params.beg}  \
+#             --end   {params.end}  \
+#             --bfile {params.geno} \
+#             --cs_thresh {params.ppp}  \
+#             --outdir {output.odir} \
+#             --phenotype_id full  \
+#             --nf_hcoloc_v no_nf  2> {log}
+#         """
+
+# import pandas as pd
+
+# Define a wildcard to capture the parameters
+wildcard_constraints:
+    j='[0-9]+'#,    i=seqid
+
+# Define the input function to generate input files for each wildcard
+def input_func(wildcards):
+    df = pd.read_csv(ws_path("output/break/seq.{wildcards.i}/seq.{wildcards.i}_dataset_aligned.tsv.gz"), sep='\t')
+    row = df.iloc[int(wildcards.j)]
+    #return [ws_path(f"output/break/seq.{row['chr']}/seq.{row['chr']}_dataset_aligned.tsv.gz")]
+    return [df]
+
+# # Define the output function to generate output directories for each wildcard
+# def output_func(wildcards):
+#     return {
+#         "odir": ws_path(f"output/cojo/seq.{wildcards.j}/"),
+#         "log": ws_path(f"logs/cojo/seq.{wildcards.j}.log")
+#     }
+
+# Modify the rule to use global wildcard {i}
+# rule run_cojo:
+#     input:
+#         ifile = expand(ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz"), i = seqid),
+#         tfile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
+#         #bfile = input_func
+#     output:
+#         odir = expand(ws_path("output/cojo/seq.{i}/"), i = seqid),
+#         log  = expand(ws_path("logs/cojo/seq.{i}.log"), i = seqid)
+#     params:
+#         codes = config.get("path_code"),
+#         geno  = config.get("path_geno"),
+#         ofile = lambda wildcards: ws_path("output/cojo/seq.{wildcards.i}/seq.{wildcards.i}"),
+#         chr   = input_func,
+#         #chr = lambda wildcards: __import__("pandas").read_csv(ws_path(f"output/break/seq.{wildcards.i}/seq.{wildcards.i}_loci.tsv")).iloc[int(wildcards.j)]['chr'],
+#         #beg = lambda wildcards: __import__("pandas").read_csv(ws_path(f"output/break/seq.{wildcards.i}/seq.{wildcards.i}_loci.tsv")).iloc[int(wildcards.j)]['start'],
+#         #end = lambda wildcards: __import__("pandas").read_csv(ws_path(f"output/break/seq.{wildcards.i}/seq.{wildcards.i}_loci.tsv")).iloc[int(wildcards.j)]['end'],
+#         ppp = 0.99
+#     log:
+#         ws_path("logs/cojo/seq.{wildcards.i}.log")
+#     resources:
+#         mem_mb = 8000,
+#         runtime = 60
+#     shell:
+#         """
+#         source ~/.bashrc && \
+#         conda activate r_finemap &&  \
+#         Rscript scripts/s04_cojo_finemapping.R  \
+#             --pipeline_path   {params.codes}  \
+#             --dataset_aligned {input.ifile}  \
+#             --study_id {params.ofile}  \
+#             --chr   {params.chr}  \
+#             --start {params.beg}  \
+#             --end   {params.end}  \
+#             --bfile {params.geno} \
+#             --cs_thresh {params.ppp}  \
+#             --outdir {output.odir} \
+#             --phenotype_id full  \
+#             --nf_hcoloc_v no_nf  2> {log}
+#         """
+
+rule extract_chr_beg_end:
     output:
-        #ofile = ws_path("output/cojo/seq.{i}/seq.{i}")
-        ofile = "condition_data_chr9_up.rds",
-        ws_path("logs/cojo/seq.{i}.log")
+        ws_path("output/chr_beg_end/seq.{i}.txt")
+    run:
+        with open(output[0], "w") as f:
+            for item in extract_chr_beg_end(wildcards):
+                f.write(str(item) + "\n")
+
+
+rule run_cojo:
+    input:
+        ifile=ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz"),
+        chr_beg_end=ws_path("output/chr_beg_end/seq.{i}.txt")
+    output:
+        odir=ws_path("output/cojo/seq.{i}/{chr}_{beg}_{end}/"),
+        log=ws_path("logs/cojo/seq.{i}/{chr}_{beg}_{end}.log")
     params:
-        codes = config.get("path_code"),
-        geno  = config.get("path_geno"),
-        ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
-        chr = 9, beg = 136014227, end = 136466717,
-        #chr = 15, beg = 74136827, end = 75246105, 
-        ppp = 0.99, #seque = "seq.{i}"
+        codes=config.get("path_code"),
+        geno=config.get("path_geno"),
+        ofile=ws_path("output/cojo/seq.{i}/{chr}_{beg}_{end}/"),
+        ppp=0.99
     log:
-        ws_path("logs/cojo/seq.{i}.log")
+        ws_path("logs/cojo/seq.{i}/{chr}_{beg}_{end}.log")
     resources:
-        mem_mb = 8000, runtime = 60
+        mem_mb=8000,
+        runtime=60
     shell:
         """
-        source ~/.bashrc && \
-        conda activate r_finemap &&  \
-        Rscript scripts/s04_cojo_finemapping.R  \
-            --pipeline_path {params.codes}  \
-            --dataset_aligned {input.ifile}  \
-            --study_id {params.ofile}  \
-            --chr   {params.chr}  \
-            --start {params.beg}  \
-            --end   {params.end}  \
-            --bfile {params.geno} \
-            --cs_thresh {params.ppp}  \
-            --phenotype_id full  \
-            --nf_hcoloc_v no_nf  2> {log}
+        source ~/.bashrc && \\
+        conda activate r_finemap && \\
+        Rscript scripts/s04_cojo_finemapping.R \\
+            --pipeline_path {params.codes} \\
+            --dataset_aligned {input.ifile} \\
+            --study_id {params.ofile} \\
+            --chr {wildcards.chr} \\
+            --start {wildcards.beg} \\
+            --end {wildcards.end} \\
+            --bfile {params.geno} \\
+            --cs_thresh {params.ppp} \\
+            --outdir {output.odir} \\
+            --phenotype_id full \\
+            --nf_hcoloc_v no_nf 2> {log}
         """
 
+
+def extract_chr_beg_end(wildcards):
+    chr_beg_end_list = []
+    with open(ws_path("output/chr_beg_end/seq.{i}.txt".format(i=wildcards.i))) as f:
+        for line in f:
+            chr_beg_end_list.append(eval(line.strip()))
+    return chr_beg_end_list
+
+rule apply_run_cojo:
+    input:
+        rules.extract_chr_beg_end.output
+    run:
+        for chr_beg_end in extract_chr_beg_end(wildcards):
+            snakemake(
+                rules.run_cojo,
+                i=wildcards.i,
+                chr=chr_beg_end["chr"],
+                beg=chr_beg_end["beg"],
+                end=chr_beg_end["end"],
+                cores=1,
+            )

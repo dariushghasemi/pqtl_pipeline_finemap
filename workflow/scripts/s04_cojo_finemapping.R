@@ -18,6 +18,7 @@ option_list <- list(
   make_option("--hole", default=250000, help="Minimum pair-base distance between SNPs in different loci"),
   make_option("--cs_thresh", default=NULL, help="Percentage of credible set"),
   make_option("--study_id", default=NULL, help="Id of the study"),
+  make_option("--outdir", default=NULL, help="Output directory"),
   make_option("--nf_hcoloc_v", default=NULL, help="Version of nf hcoloc pipleine used, for reporting sake")
 );
 opt_parser = OptionParser(option_list=option_list);
@@ -37,10 +38,9 @@ dataset_aligned <- fread(opt$dataset_aligned, data.table=F) %>% dplyr::filter(ph
 
 # flip alleles in the summary stats to allow matching SNP id with the genotype file
 dataset_aligned <- dataset_aligned %>% mutate(
-    snp2 = stringr::str_c(CHR, BP, A2, A1, sep = ":"), 
-    snp_map = stringr::str_c("chr", snp2)
-  ) %>%
-  select(-snp2)
+    SNP = stringr::str_c(CHR, BP, A2, A1, sep = ":"), 
+    #snp_map = stringr::str_c("chr", snp2)
+  ) #%>% select(-snp2)
 
 cat("\nAlleles in the GWAS summary file were flipped!\n")
 
@@ -65,8 +65,9 @@ conditional.dataset <- cojo.ht(
 cat(paste0("\nCOJO is done! Time to draw a chart ...\n\n"))
 
 # Plot conditioned GWAS sum stats
+dir.create(paste0(opt$outdir), recursive = TRUE)
+#pdf(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.pdf"), height = 7, width = 10)
 pdf(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.pdf"), height=3.5*nrow(conditional.dataset$ind.snps), width=10) ### have the original loci boundaries in the name, or the slightly enlarged ones?
-#cat(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.pdf"))
 #pdf(paste0("13124.20", "_locus_chr", "99", "_conditioned_loci.pdf"), height=3.5*nrow(conditional.dataset$ind.snps), width=10)
 plot.cojo.ht(conditional.dataset) + patchwork::plot_annotation(paste("Locus chr", locus_name))
 dev.off()
@@ -99,12 +100,11 @@ conditional.dataset$results <- lapply(conditional.dataset$results, function(x){
   }
 })
 
-saveRDS(conditional.dataset, file=paste0("condition_data_chr9_up", ".rds"))
-
 cat("\nApply locus breaker and widen the locus!\n")
 ## Remove eventually empty dataframes (caused by p_thresh4 filter)  
 conditional.dataset$results <- conditional.dataset$results %>% discard(is.null)
 
+saveRDS(conditional.dataset, file=paste0("condition_data_chr15_up", ".rds"))
 
 cat("\nBegin to fine map!\n")
 
