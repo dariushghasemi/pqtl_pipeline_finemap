@@ -32,6 +32,7 @@ locus_name <- paste0(opt$chr, "_", opt$start, "_", opt$end)
 opt$chr <- as.numeric(opt$chr)
 opt$start <- as.numeric(opt$start) -100000
 opt$end <- as.numeric(opt$end) + 100000
+cat(paste("\nlocus is:", locus_name, "\n"))
 
 # GWAS input
 dataset_aligned <- fread(opt$dataset_aligned, data.table=F) %>% dplyr::filter(phenotype_id==opt$phenotype_id)
@@ -66,9 +67,8 @@ cat(paste0("\nCOJO is done! Time to draw a chart ...\n\n"))
 
 # Plot conditioned GWAS sum stats
 dir.create(paste0(opt$outdir), recursive = TRUE)
-#pdf(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.pdf"), height = 7, width = 10)
-pdf(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.pdf"), height=3.5*nrow(conditional.dataset$ind.snps), width=10) ### have the original loci boundaries in the name, or the slightly enlarged ones?
-#pdf(paste0("13124.20", "_locus_chr", "99", "_conditioned_loci.pdf"), height=3.5*nrow(conditional.dataset$ind.snps), width=10)
+#pdf(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.pdf"), height=3.5*nrow(conditional.dataset$ind.snps), width=10) ### have the original loci boundaries in the name, or the slightly enlarged ones?
+png(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.png"), res = 300, units = "in", height=3.5*nrow(conditional.dataset$ind.snps), width=10)
 plot.cojo.ht(conditional.dataset) + patchwork::plot_annotation(paste("Locus chr", locus_name))
 dev.off()
 
@@ -104,7 +104,7 @@ cat("\nApply locus breaker and widen the locus!\n")
 ## Remove eventually empty dataframes (caused by p_thresh4 filter)  
 conditional.dataset$results <- conditional.dataset$results %>% discard(is.null)
 
-saveRDS(conditional.dataset, file=paste0("condition_data_chr15_up", ".rds"))
+#saveRDS(conditional.dataset, file=paste0("condition_data_chr15_up", ".rds"))
 
 cat("\nBegin to fine map!\n")
 

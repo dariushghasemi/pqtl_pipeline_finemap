@@ -15,51 +15,14 @@ def db_path(file_path):
 def ss_path(file_path):
     return str(Path(config.get("path_pwas"), file_path))
 
-# def extract_chr_beg_end(wildcards):
-#     tfile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv") #.format(i=wildcards.i))
-#     df = pd.read_csv(tfile.format(i=wildcards.i), sep="\t", usecols=["chr", "start", "end"])
-#     chr_beg_end_list = [
-#        {"chr": row["chr"], "beg": row["start"], "end": row["end"]}
-#        for _, row in df.iterrows()
-#     ]
-#     return chr_beg_end_list
-
-def extract_chr_beg_end(wildcards):
-    tfile = global_wildcards(ws_path("output/break/seq.{i}/seq.{i}_loci.tsv")).i #.format(i=wildcards.i)
-    df = pd.read_csv(tfile, sep="\t", usecols=["chr", "start", "end"])
-    chr_beg_end_list = df.to_dict("records")
-    return chr_beg_end_list
-
-# def extract_chr_beg_end(i):
-#     wildcards = global_wildcards()
-#     tfile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv".format(i, i))
-#     df = pd.read_csv(tfile, sep="\t", usecols=["chr", "start", "end"])
-#     chr_beg_end_list = df.to_dict("records")
-#     return chr_beg_end_list
 
 rule all:
     input:
         expand(
             #ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-            ws_path("logs/cojo/seq.{i}/{chr}_{beg}_{end}.log"), 
-            i = seqid,
-            chr_beg_end=extract_chr_beg_end(wildcards.i),
-            chr="{chr_beg_end.chr}",
-            beg="{chr_beg_end.beg}",
-            end="{chr_beg_end.end}"
-            ),
-        #expand(
-        #    ws_path("output/cojo/seq.{i}/{chr}_{beg}_{end}/"), i = seqid
-        #    ),
-        # expand(
-        #     ws_path("output/cojo/seq.{i}/{chr}_{beg}_{end}.log"),
-        #     i = seqid,
-        #     chr_beg_end=extract_chr_beg_end,
-        #     chr="{chr}",
-        #     beg="{beg}",
-        #     end="{end}"
-        #     )
-
+            ws_path("logs/cojo/seq.{i}.log"), 
+            i = seqid
+        )
 
 rule munge_sumstats:
     input:
@@ -143,170 +106,63 @@ rule break_locus:
         Rscript scripts/s03_locus_breaker.R  \
             --pipeline_path {params.codes}  \
             --study_id {params.ifile}  \
-            --p_thresh1 5e-06  \
-            --p_thresh2 1e-04  \
+            --p_thresh1 5e-08  \
+            --p_thresh2 1e-05  \
             --outdir {params.ofile}  2> {log}
         """
 
-
-# rule run_cojo:
-#     input:
-#         ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
-#     output:
-#         odir = ws_path("output/cojo/seq.{i}/"),
-#         log = ws_path("logs/cojo/seq.{i}.log")
-#     params:
-#         codes = config.get("path_code"),
-#         geno  = config.get("path_geno"),
-#         ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
-#         #chr = 9, beg = 136014227, end = 136466717,
-#         chr = 15, beg = 74136827, end = 75246105, 
-#         ppp = 0.99, #seque = "seq.{i}"
-#     log:
-#         ws_path("logs/cojo/seq.{i}.log")
-#     resources:
-#         mem_mb = 8000, runtime = 60
-#     shell:
-#         """
-#         source ~/.bashrc && \
-#         conda activate r_finemap &&  \
-#         Rscript scripts/s04_cojo_finemapping.R  \
-#             --pipeline_path   {params.codes}  \
-#             --dataset_aligned {input.ifile}  \
-#             --study_id {params.ofile}  \
-#             --chr   {params.chr}  \
-#             --start {params.beg}  \
-#             --end   {params.end}  \
-#             --bfile {params.geno} \
-#             --cs_thresh {params.ppp}  \
-#             --outdir {output.odir} \
-#             --phenotype_id full  \
-#             --nf_hcoloc_v no_nf  2> {log}
-#         """
-
-# import pandas as pd
-
-# Define a wildcard to capture the parameters
-wildcard_constraints:
-    j='[0-9]+'#,    i=seqid
-
-# Define the input function to generate input files for each wildcard
-def input_func(wildcards):
-    df = pd.read_csv(ws_path("output/break/seq.{wildcards.i}/seq.{wildcards.i}_dataset_aligned.tsv.gz"), sep='\t')
-    row = df.iloc[int(wildcards.j)]
-    #return [ws_path(f"output/break/seq.{row['chr']}/seq.{row['chr']}_dataset_aligned.tsv.gz")]
-    return [df]
-
-# # Define the output function to generate output directories for each wildcard
-# def output_func(wildcards):
-#     return {
-#         "odir": ws_path(f"output/cojo/seq.{wildcards.j}/"),
-#         "log": ws_path(f"logs/cojo/seq.{wildcards.j}.log")
-#     }
-
-# Modify the rule to use global wildcard {i}
-# rule run_cojo:
-#     input:
-#         ifile = expand(ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz"), i = seqid),
-#         tfile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-#         #bfile = input_func
-#     output:
-#         odir = expand(ws_path("output/cojo/seq.{i}/"), i = seqid),
-#         log  = expand(ws_path("logs/cojo/seq.{i}.log"), i = seqid)
-#     params:
-#         codes = config.get("path_code"),
-#         geno  = config.get("path_geno"),
-#         ofile = lambda wildcards: ws_path("output/cojo/seq.{wildcards.i}/seq.{wildcards.i}"),
-#         chr   = input_func,
-#         #chr = lambda wildcards: __import__("pandas").read_csv(ws_path(f"output/break/seq.{wildcards.i}/seq.{wildcards.i}_loci.tsv")).iloc[int(wildcards.j)]['chr'],
-#         #beg = lambda wildcards: __import__("pandas").read_csv(ws_path(f"output/break/seq.{wildcards.i}/seq.{wildcards.i}_loci.tsv")).iloc[int(wildcards.j)]['start'],
-#         #end = lambda wildcards: __import__("pandas").read_csv(ws_path(f"output/break/seq.{wildcards.i}/seq.{wildcards.i}_loci.tsv")).iloc[int(wildcards.j)]['end'],
-#         ppp = 0.99
-#     log:
-#         ws_path("logs/cojo/seq.{wildcards.i}.log")
-#     resources:
-#         mem_mb = 8000,
-#         runtime = 60
-#     shell:
-#         """
-#         source ~/.bashrc && \
-#         conda activate r_finemap &&  \
-#         Rscript scripts/s04_cojo_finemapping.R  \
-#             --pipeline_path   {params.codes}  \
-#             --dataset_aligned {input.ifile}  \
-#             --study_id {params.ofile}  \
-#             --chr   {params.chr}  \
-#             --start {params.beg}  \
-#             --end   {params.end}  \
-#             --bfile {params.geno} \
-#             --cs_thresh {params.ppp}  \
-#             --outdir {output.odir} \
-#             --phenotype_id full  \
-#             --nf_hcoloc_v no_nf  2> {log}
-#         """
-
-rule extract_chr_beg_end:
-    output:
-        ws_path("output/chr_beg_end/seq.{i}.txt")
-    run:
-        with open(output[0], "w") as f:
-            for item in extract_chr_beg_end(wildcards):
-                f.write(str(item) + "\n")
+def get_loci_data(wildcards):
+    import pandas as pd
+    loci_file = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv".format(i=wildcards))
+    loci_df = pd.read_csv(loci_file, sep="\t", usecols=[0, 1, 2]) # header=True,, names=["chr", "beg", "end"]
+    return [" ".join(row) for row in loci_df.values.tolist()]
+    #return list(loci_df.itertuples(index=False, name=None))
 
 
 rule run_cojo:
     input:
-        ifile=ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz"),
-        chr_beg_end=ws_path("output/chr_beg_end/seq.{i}.txt")
+        ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz"),
+        loci  = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
+        #loci_data = lambda wildcards: get_loci_data(wildcards.i)
     output:
-        odir=ws_path("output/cojo/seq.{i}/{chr}_{beg}_{end}/"),
-        log=ws_path("logs/cojo/seq.{i}/{chr}_{beg}_{end}.log")
+        odir = ws_path("output/cojo/seq.{i}/"),
+        log = ws_path("logs/cojo/seq.{i}.log")
     params:
-        codes=config.get("path_code"),
-        geno=config.get("path_geno"),
-        ofile=ws_path("output/cojo/seq.{i}/{chr}_{beg}_{end}/"),
-        ppp=0.99
+        codes = config.get("path_code"),
+        geno  = config.get("path_geno"),
+        ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
+        #chr = 9, beg = 136014227, end = 136466717,
+        #chr = 15, beg = 74136827, end = 75246105, 
+        ppp = 0.99, #seque = "seq.{i}"
     log:
-        ws_path("logs/cojo/seq.{i}/{chr}_{beg}_{end}.log")
+        ws_path("logs/cojo/seq.{i}.log")
     resources:
-        mem_mb=8000,
-        runtime=60
-    shell:
-        """
-        source ~/.bashrc && \\
-        conda activate r_finemap && \\
-        Rscript scripts/s04_cojo_finemapping.R \\
-            --pipeline_path {params.codes} \\
-            --dataset_aligned {input.ifile} \\
-            --study_id {params.ofile} \\
-            --chr {wildcards.chr} \\
-            --start {wildcards.beg} \\
-            --end {wildcards.end} \\
-            --bfile {params.geno} \\
-            --cs_thresh {params.ppp} \\
-            --outdir {output.odir} \\
-            --phenotype_id full \\
-            --nf_hcoloc_v no_nf 2> {log}
-        """
-
-
-def extract_chr_beg_end(wildcards):
-    chr_beg_end_list = []
-    with open(ws_path("output/chr_beg_end/seq.{i}.txt".format(i=wildcards.i))) as f:
-        for line in f:
-            chr_beg_end_list.append(eval(line.strip()))
-    return chr_beg_end_list
-
-rule apply_run_cojo:
-    input:
-        rules.extract_chr_beg_end.output
+        mem_mb = 8000, runtime = 60
     run:
-        for chr_beg_end in extract_chr_beg_end(wildcards):
-            snakemake(
-                rules.run_cojo,
-                i=wildcards.i,
-                chr=chr_beg_end["chr"],
-                beg=chr_beg_end["beg"],
-                end=chr_beg_end["end"],
-                cores=1,
-            )
+        ##import pandas as pd
+        ##loci_df = pd.read_csv("{params.loci}", sep="\t", header=None, usecols=[0, 1, 2], names=["chr", "beg", "end"])
+        ##for _, row in loci_df.iterrows():
+        ##    chr, beg, end = row
+        with open(input.loci) as f:
+            next(f)  # Skip the header row
+            for line in f:
+                chr, beg, end = line.strip().split('\t')[:3]
+                shell("""
+                source ~/.bashrc && \
+                conda activate r_finemap &&  \
+                Rscript scripts/s04_cojo_finemapping.R  \
+                --pipeline_path   {params.codes}  \
+                --dataset_aligned {input.ifile}  \
+                --study_id {params.ofile}  \
+                --chr   {chr}  \
+                --start {beg}  \
+                --end   {end}  \
+                --bfile {params.geno} \
+                --cs_thresh {params.ppp}  \
+                --outdir {output.odir} \
+                --phenotype_id full  \
+                --nf_hcoloc_v no_nf  2>> {log}
+                """
+                )
+
+#        tail -n+2 {input.loci} | cut -f1-3 | while IFS=$'\t' read -r chr beg end; do
