@@ -46,4 +46,6 @@ conda deactivate
 
 - According to the abovementioned explanations, fine-mapping outputs including independet variants, credible set, regional association plots were saved for 3 out of 6 tested protein sequence in `~/projects/pqtl_pipeline_finemap/output/cojo/<seqid>` (Thu, 23:45, 25-Apr-24).
 
+- The first two steps of the original workflow are not needed in this context. Therefore, it is better to start with the step 3, locus breaker, directly using protein GWAS summary stats from REGENIE which is already aligned (Fri, 11:58, 26-Apr-24). 
+
 Dariush
