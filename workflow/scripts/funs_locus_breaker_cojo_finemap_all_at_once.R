@@ -249,7 +249,7 @@ locus.breaker <- function(
   
   res <- as.data.frame(res)
   res = res[order(as.numeric(res[, chr.label]), as.numeric(res[,pos.label])), ]
-  res = res[which(res[, p.label] < p.limit), ]
+  res = res[which(res[, p.label] > p.limit), ]
   trait.res = c()
   
   for(j in unique(res[,chr.label])) {
@@ -269,11 +269,11 @@ locus.breaker <- function(
             res.loc = res.chr[(gaps[k - 1] + 1):(gaps[k]), 
             ]
           }
-          if (min(res.loc[, p.label]) < p.sig) {
-            start.pos = min(res.loc[, pos.label], na.rm = T)
-            end.pos = max(res.loc[, pos.label], na.rm = T)
+          if (max(res.loc[, p.label]) > p.sig) {
+            start.pos = max(res.loc[, pos.label], na.rm = T)
+            end.pos = min(res.loc[, pos.label], na.rm = T)
             chr = j
-            best.snp = res.loc[which.min(res.loc[, p.label]), 
+            best.snp = res.loc[which.max(res.loc[, p.label]), 
             ]
             line.res = c(chr, start.pos, end.pos, unlist(best.snp))
             trait.res = rbind(trait.res, line.res)
@@ -281,11 +281,11 @@ locus.breaker <- function(
         }
       } else {
         res.loc = res.chr
-        if (min(res.loc[, p.label]) < p.sig) {
-          start.pos = min(res.loc[, pos.label], na.rm = T)
-          end.pos = max(res.loc[, pos.label], na.rm = T)
+        if (min(res.loc[, p.label]) > p.sig) {
+          start.pos = max(res.loc[, pos.l.abel], na.rm = T)
+          end.pos = min(res.loc[, pos.label], na.rm = T)
           chr = j
-          best.snp = res.loc[which.min(res.loc[, p.label]), 
+          best.snp = res.loc[which.max(res.loc[, p.label]), 
           ]
           line.res = c(chr, start.pos, end.pos, unlist(best.snp))
           trait.res = rbind(trait.res, line.res)
@@ -294,11 +294,11 @@ locus.breaker <- function(
     }
     else if (nrow(res.chr) == 1) {
       res.loc = res.chr
-      if (min(res.loc[, p.label]) < p.sig) {
-        start.pos = min(res.loc[, pos.label], na.rm = T)
-        end.pos = max(res.loc[, pos.label], na.rm = T)
+      if (max(res.loc[, p.label]) > p.sig) {
+        start.pos = max(res.loc[, pos.label], na.rm = T)
+        end.pos = min(res.loc[, pos.label], na.rm = T)
         chr = j
-        best.snp = res.loc[which.min(res.loc[, p.label]), 
+        best.snp = res.loc[which.max(res.loc[, p.label]), 
         ]
         line.res = c(chr, start.pos, end.pos, unlist(best.snp))
         trait.res = rbind(trait.res, line.res)
