@@ -14,7 +14,7 @@ opt = parse_args(opt_parser);
 
 ## Source function R functions
 source(paste0(opt$pipeline_path, "funs_locus_breaker_cojo_finemap_all_at_once.R"))
-
+cat("\n\nChecking input file...")
 ## Throw error message - GWAS summary statistics file MUST be provided!
 if(is.null(opt$input)){
   print_help(opt_parser)
@@ -24,8 +24,10 @@ if(is.null(opt$input)){
 ##################################
 # Load in and munge GWAS sum stats
 ##################################
-gwas <- fread(opt$input, data.table = F)
 
+cat("\n\nReading GWAS file...")
+gwas <- fread(opt$input, data.table = F)
+cat("done!\n")
 # separate path from seqid given by study_id, then make name pattern
 sumstat_name <- basename(opt$study_id)
 sumstat_path <- paste0(dirname(opt$study_id), "/")
@@ -45,12 +47,14 @@ file_pattern <- paste0(sumstat_name, "_chr(\\d+)_dataset_aligned.tsv.gz")
 
 # Save
 #fwrite(dataset_aligned, paste0(opt$study_id, "_dataset_aligned.tsv.gz"), quote=F, na=NA, sep="\t")
-fwrite(dataset_aligned, paste0(opt$outdir, "_dataset_aligned.tsv.gz"), quote=F, na=NA, sep="\t")
+#fwrite(dataset_aligned, paste0(opt$outdir, "_dataset_aligned.tsv.gz"), quote=F, na=NA, sep="\t")
 
 
 ################
 # Locus breaker
 ################
+
+cat("\n\nDefining locus...")
 
 # loci_list <- as.data.frame(rbindlist(
 #   lapply(dataset_aligned %>% group_split(phenotype_id), function(x){
@@ -84,17 +88,20 @@ check_signif <- function(x){
     pos.label = "GENPOS"
   )
   }
-}
+} %>% discard(is.null)
 
 #list of index variants
-loci_list <- check_signif(res)
+loci_list <- check_signif(gwas)
+cat("done!\n")
 
 ### Add study ID to the loci table. Save
 #loci_list <- loci_list %>% mutate(study_id=opt$study_id)
-loci_list <- loci_list %>% mutate(study_id=sumstat_name)
+loci_list$study_id <- sumstat_name
 
+cat("\n\nSaving index variants...")
 #fwrite(loci_list, paste0(opt$study_id, "_loci.tsv"), sep="\t", quote=F, na=NA)
 fwrite(loci_list, paste0(opt$outdir, "_loci.tsv"), sep="\t", quote=F, na=NA)
+cat("done!\n")
 
 #cat(paste0("\n", nrow(loci_list), " significant loci identified for ", opt$study_id, "\n"))
 cat(paste0("\n", nrow(loci_list), " significant loci identified for ", sumstat_name, "\n"))

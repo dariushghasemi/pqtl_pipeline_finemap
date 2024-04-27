@@ -8,3 +8,7 @@ output/
 *.snp.list
 *.pdf
 *.png
+*.RData
+*test*.*
+michele.smk
+tuto.smk

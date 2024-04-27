@@ -20,81 +20,83 @@ rule all:
     input:
         expand(
             #ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-            ws_path("logs/cojo/seq.{i}.log"), 
+            #ws_path("logs/cojo/seq.{i}.log"), 
+            ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
             i = seqid
         )
 
-rule munge_sumstats:
-    input:
-        ifile = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz")
-    output:
-        ofile = ws_path("output/munge/seq.{i}_dataset.rds")
-    params:
-        codes = config.get("path_code"),
-        ofile = ws_path("output/munge/seq.{i}")
-    log:
-        ws_path("logs/munge/seq.{i}.log")
-    resources:
-        mem_mb = 16000, runtime = 60
-#    conda:
-#        "envs/r_environment.yml"
-#    container:
-#        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
-    shell:
-        """
-        source ~/.bashrc && \
-        conda activate r_finemap &&  \
-        Rscript scripts/s01_sumstat_munging.R  \
-            --pipeline_path {params.codes}  \
-            --input {input.ifile}  \
-            --is_molQTL FALSE  \
-            --type quant  \
-            --s NA  \
-            --study_id {params.ofile}
-        """
+# rule munge_sumstats:
+#     input:
+#         ifile = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz")
+#     output:
+#         ofile = ws_path("output/munge/seq.{i}_dataset.rds")
+#     params:
+#         codes = config.get("path_code"),
+#         ofile = ws_path("output/munge/seq.{i}")
+#     log:
+#         ws_path("logs/munge/seq.{i}.log")
+#     resources:
+#         mem_mb = 16000, runtime = 60
+# #    conda:
+# #        "envs/r_environment.yml"
+# #    container:
+# #        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+#     shell:
+#         """
+#         source ~/.bashrc && \
+#         conda activate r_finemap &&  \
+#         Rscript scripts/s01_sumstat_munging.R  \
+#             --pipeline_path {params.codes}  \
+#             --input {input.ifile}  \
+#             --is_molQTL FALSE  \
+#             --type quant  \
+#             --s NA  \
+#             --study_id {params.ofile}
+#         """
 
 
-rule align_sumstats:
-    input:
-        ifile = ws_path("output/munge/seq.{i}_dataset.rds")
-    output:
-        ifile = ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"),
-        #lfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_snplist.tsv"), i = seqid, chrom = range(1, 23)),
-        #mfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_map.tsv"), i = seqid, chrom = range(1, 23))
-    params:
-        codes = config.get("path_code"),
-        ofile = ws_path("output/align/seq.{i}/seq.{i}"),
-        chro  = "{chrom}"
-    #log:
-    #    ws_path("logs/align/seq.{i}_chr{chrom}.log")
-    #conda:
-    #    "envs/r_envirnonment.yml"
-    resources:
-        mem_mb = 8000, runtime = 60
-    shell:
-        """
-        source ~/.bashrc && \
-        conda activate r_finemap &&  \
-        Rscript scripts/s02_sumstat_alignment.R  \
-            --pipeline_path {params.codes}  \
-            --dataset {input.ifile}  \
-            --chr_tabix {params.chro}  \
-            --grch 38  \
-            --study_id {params.ofile}
-        """
+# rule align_sumstats:
+#     input:
+#         ifile = ws_path("output/munge/seq.{i}_dataset.rds")
+#     output:
+#         ifile = ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"),
+#         #lfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_snplist.tsv"), i = seqid, chrom = range(1, 23)),
+#         #mfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_map.tsv"), i = seqid, chrom = range(1, 23))
+#     params:
+#         codes = config.get("path_code"),
+#         ofile = ws_path("output/align/seq.{i}/seq.{i}"),
+#         chro  = "{chrom}"
+#     #log:
+#     #    ws_path("logs/align/seq.{i}_chr{chrom}.log")
+#     #conda:
+#     #    "envs/r_envirnonment.yml"
+#     resources:
+#         mem_mb = 8000, runtime = 60
+#     shell:
+#         """
+#         source ~/.bashrc && \
+#         conda activate r_finemap &&  \
+#         Rscript scripts/s02_sumstat_alignment.R  \
+#             --pipeline_path {params.codes}  \
+#             --dataset {input.ifile}  \
+#             --chr_tabix {params.chro}  \
+#             --grch 38  \
+#             --study_id {params.ofile}
+#         """
 
 
 rule break_locus:
     input:
-        ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23))
+        gwas = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz")
+        #ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23))
     output:
-        ofile = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-        sfile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
+        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
+        #sfile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
     params:
         codes = config.get("path_code"),
-        ifile = ws_path("output/align/seq.{i}/seq.{i}"),
+        ifile = ss_path("seq.{i}/seq.{i}"),
         ofile = ws_path("output/break/seq.{i}/seq.{i}"),
-        seque = "seq.{i}"
+        seque = "seq.{i}", p1 = 7.30103, p2 = 5, hole = 250000
     log:
         ws_path("logs/break/seq.{i}.log")
     resources:
@@ -105,9 +107,11 @@ rule break_locus:
         conda activate r_finemap &&  \
         Rscript scripts/s03_locus_breaker.R  \
             --pipeline_path {params.codes}  \
-            --study_id {params.ifile}  \
-            --p_thresh1 5e-08  \
-            --p_thresh2 1e-05  \
+            --input {input.gwas}  \
+            --study_id  {params.ofile}  \
+            --p_thresh1 {params.p1}  \
+            --p_thresh2 {params.p2}  \
+            --hole   {params.hole} \
             --outdir {params.ofile}  2> {log}
         """
 
@@ -121,8 +125,9 @@ def get_loci_data(wildcards):
 
 rule run_cojo:
     input:
-        ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz"),
-        loci  = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
+        #ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz"),
+        gwas = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz"),
+        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
         #loci_data = lambda wildcards: get_loci_data(wildcards.i)
     output:
         odir = ws_path("output/cojo/seq.{i}/"),
@@ -152,7 +157,7 @@ rule run_cojo:
                 conda activate r_finemap &&  \
                 Rscript scripts/s04_cojo_finemapping.R  \
                 --pipeline_path   {params.codes}  \
-                --dataset_aligned {input.ifile}  \
+                --dataset_aligned {input.gwas}  \
                 --study_id {params.ofile}  \
                 --chr   {chr}  \
                 --start {beg}  \
