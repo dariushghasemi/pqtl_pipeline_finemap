@@ -1,11 +1,15 @@
+# import required libraries
 from pathlib import Path
 from os.path import join as pjoin
 import pandas as pd
 
+# read the configuration file
 configfile: "../conf/config_finemap.yaml"
 
+# introduce the wildcard variable
 seqid = config["sample_seqids"]
 
+# define teh functions generating files' path
 def ws_path(file_path):
     return str(pjoin(config.get("path_base"), file_path))
 
@@ -19,9 +23,8 @@ def ss_path(file_path):
 rule all:
     input:
         expand(
+            ws_path("logs/cojo/seq.{i}.log"), 
             #ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-            #ws_path("logs/cojo/seq.{i}.log"), 
-            ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
             i = seqid
         )
 
@@ -87,16 +90,18 @@ rule all:
 
 rule break_locus:
     input:
-        gwas = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz")
+        gwas = ss_path("seq.{i}.gwas.regenie.gz")
         #ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23))
     output:
         loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-        #sfile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
     params:
         codes = config.get("path_code"),
-        ifile = ss_path("seq.{i}/seq.{i}"),
+        ifile = ss_path("seq.{i}"),
         ofile = ws_path("output/break/seq.{i}/seq.{i}"),
-        seque = "seq.{i}", p1 = 7.30103, p2 = 5, hole = 250000
+        seque = "seq.{i}",
+        p1    = config.get('thresholds', 'p1'),
+        p2    = config.get('thresholds', 'p2'),
+        hole  = config.get('thresholds', 'hole')
     log:
         ws_path("logs/break/seq.{i}.log")
     resources:
@@ -115,39 +120,25 @@ rule break_locus:
             --outdir {params.ofile}  2> {log}
         """
 
-def get_loci_data(wildcards):
-    import pandas as pd
-    loci_file = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv".format(i=wildcards))
-    loci_df = pd.read_csv(loci_file, sep="\t", usecols=[0, 1, 2]) # header=True,, names=["chr", "beg", "end"]
-    return [" ".join(row) for row in loci_df.values.tolist()]
-    #return list(loci_df.itertuples(index=False, name=None))
-
 
 rule run_cojo:
     input:
-        #ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz"),
-        gwas = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz"),
-        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-        #loci_data = lambda wildcards: get_loci_data(wildcards.i)
+        gwas = ss_path("seq.{i}.gwas.regenie.gz"),
+        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv")
     output:
         odir = ws_path("output/cojo/seq.{i}/"),
-        log = ws_path("logs/cojo/seq.{i}.log")
+        log  = ws_path("logs/cojo/seq.{i}.log")
     params:
         codes = config.get("path_code"),
         geno  = config.get("path_geno"),
         ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
-        #chr = 9, beg = 136014227, end = 136466717,
-        #chr = 15, beg = 74136827, end = 75246105, 
-        ppp = 0.99, #seque = "seq.{i}"
+        ppp   = config.get('thresholds', 'ppp')
     log:
         ws_path("logs/cojo/seq.{i}.log")
     resources:
         mem_mb = 8000, runtime = 60
     run:
-        ##import pandas as pd
-        ##loci_df = pd.read_csv("{params.loci}", sep="\t", header=None, usecols=[0, 1, 2], names=["chr", "beg", "end"])
-        ##for _, row in loci_df.iterrows():
-        ##    chr, beg, end = row
+        # read the loci and loop over each locus
         with open(input.loci) as f:
             next(f)  # Skip the header row
             for line in f:
@@ -169,5 +160,3 @@ rule run_cojo:
                 --nf_hcoloc_v no_nf  2>> {log}
                 """
                 )
-
-#        tail -n+2 {input.loci} | cut -f1-3 | while IFS=$'\t' read -r chr beg end; do

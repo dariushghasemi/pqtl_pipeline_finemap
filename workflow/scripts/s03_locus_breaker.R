@@ -26,7 +26,7 @@ if(is.null(opt$input)){
 ##################################
 
 cat("\n\nReading GWAS file...")
-gwas <- fread(opt$input, data.table = F)
+gwas <- data.table::fread(opt$input, data.table = F)
 cat("done!\n")
 # separate path from seqid given by study_id, then make name pattern
 sumstat_name <- basename(opt$study_id)
