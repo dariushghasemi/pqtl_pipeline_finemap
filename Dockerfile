@@ -32,7 +32,7 @@ LABEL io.github.snakemake.conda_env_hash="554edbb710da5a2b8cbb45a61e2f586edded22
 #     - bioconductor-Gviz=1.46.1
 #     - bioconductor-EnsDb.Hsapiens.v75=2.99.0
 RUN mkdir -p /conda-envs/50a3fe91d9589eca4a256154c89f39b6
-COPY envs/r_environment.yml /conda-envs/50a3fe91d9589eca4a256154c89f39b6/environment.yaml
+COPY workflow/envs/r_environment.yml /conda-envs/50a3fe91d9589eca4a256154c89f39b6/environment.yaml
 
 # Step 2: Generate conda environments
 
