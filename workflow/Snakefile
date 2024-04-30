@@ -1,6 +1,12 @@
+from snakemake.utils import min_version
 from pathlib import Path
 from os.path import join as pjoin
 import pandas as pd
+
+##### set minimum snakemake version #####
+min_version("8.4.1")
+
+containerized: "docker://ghcr.io/gmauro/pqtl_pipeline_finemap:bab2e7b"
 
 configfile: "../conf/config_finemap.yaml"
 
@@ -97,6 +103,8 @@ rule break_locus:
         ifile = ss_path("seq.{i}/seq.{i}"),
         ofile = ws_path("output/break/seq.{i}/seq.{i}"),
         seque = "seq.{i}", p1 = 7.30103, p2 = 5, hole = 250000
+    conda:
+        "envs/r_environment.yml"
     log:
         ws_path("logs/break/seq.{i}.log")
     resources:
