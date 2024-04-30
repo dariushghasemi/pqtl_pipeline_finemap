@@ -42,8 +42,7 @@ rule break_locus:
     log:
         ws_path("logs/break/{seqid}.log"),
     resources:
-        mem_mb=8000,
-        runtime=60,
+        runtime=lambda wc, attempt: attempt * 30,
     shell:
         """
         Rscript workflow/scripts/s03_locus_breaker.R \
