@@ -7,7 +7,10 @@ option_list <- list(
   make_option("--p_thresh2", default=1e-05, help="P-value threshold for loci borders"),  
   make_option("--hole", default=250000, help="Minimum pair-base distance between SNPs in different loci"),
   make_option("--study_id", default=NULL, help="Id of the study"),
-  make_option("--outdir", default=NULL, help="Output directory")
+  make_option("--outdir", default=NULL, help="Output directory"),
+  make_option("--p_label", default=NULL, help="Label of P column"),
+  make_option("--chr_label", default=NULL, help="Label of CHR column"),
+  make_option("--pos_label", default=NULL, help="Label of POS column")
 );
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
@@ -83,9 +86,9 @@ check_signif <- function(x){
     p.sig     = -log10(opt$p_thresh1),
     p.limit   = -log10(opt$p_thresh2),
     hole.size = opt$hole,
-    p.label   = "LOG10P",
-    chr.label = "CHROM", 
-    pos.label = "GENPOS"
+    p.label   = opt$p_label, #"LOG10P",
+    chr.label = opt@chr_label,  #"CHROM",
+    pos.label = opt@pos_label #"GENPOS"
   )
   }
 } %>% discard(is.null)
