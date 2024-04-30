@@ -79,7 +79,7 @@ cat("\n\nDefining locus...")
 # function to find the index variants at each locus
 check_signif <- function(x){
   ### Check if there's any SNP at p-value lower than the set threshold. Otherwise stop here
-  if(any(x %>% pull(LOG10P) > -log10(opt$p_thresh1))){
+  if(any(x %>% pull(opt$p_label) > -log10(opt$p_thresh1))){
   ### Loci identification
   locus.breaker(
     x,
