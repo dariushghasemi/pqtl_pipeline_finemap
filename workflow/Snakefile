@@ -49,14 +49,14 @@ rule break_locus:
         Rscript scripts/s03_locus_breaker.R \
             --pipeline_path {params.codes} \
             --input {input.gwas} \
-            --study_id  {params.study_id} \
+            --study_id '{params.study_id}' \
             --p_thresh1 {params.p1} \
             --p_thresh2 {params.p2} \
             --hole   {params.hole} \
             --outdir {params.outdir} \
-            --p_label {params.p_label} \
-            --chr_label {params.chr_label} \
-            --pos_label {params.pos_label} 2> {log}
+            --p_label '{params.p_label}' \
+            --chr_label '{params.chr_label}' \
+            --pos_label '{params.pos_label}' 2> {log}
         """
 
 
