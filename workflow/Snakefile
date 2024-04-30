@@ -7,7 +7,7 @@ from pathlib import Path
 min_version("8.4.1")
 
 
-containerized: "docker://ghcr.io/gmauro/pqtl_pipeline_finemap:bab2e7b"
+containerized: "docker://ghcr.io/gmauro/pqtl_pipeline_finemap:d0cd8be"
 
 
 # read the configuration file
