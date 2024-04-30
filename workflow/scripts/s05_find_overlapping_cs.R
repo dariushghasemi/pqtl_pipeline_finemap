@@ -50,7 +50,7 @@ diag(matrix_product) <- 0
 
 shared_elements <- as.data.frame(which(matrix_product > 0, arr.ind = TRUE))
 
-# For each unique SNP, list of cs having it 
+# For each unique SNP, list of cs having it
 shared_elements <- as.data.frame(shared_elements) %>%
   mutate(row=rownames(shared_elements)) %>%
   rowwise() %>%
@@ -77,7 +77,7 @@ coloc_combo <- shared_elements %>%
 #    t2_locus=gsub(".*/.*_locus_(chr\\d+_\\d+_\\d+).*", "\\1", t2_path),
 #    t2_top_snp=gsub(".*/.*_top_snp_(.*)_finemap.rds", "\\1", t2_path)
 #  )
-  
+
 
 # Remove pair testing different conditional dataset for the same trait (study_id + phenotype_id)
 coloc_combo <- coloc_combo %>%
@@ -85,4 +85,3 @@ coloc_combo <- coloc_combo %>%
   select(-t1, -t2)
 
 fwrite(coloc_combo, "coloc_pairwise_guide_table.tsv", quote=F, na=NA, sep="\t")
-

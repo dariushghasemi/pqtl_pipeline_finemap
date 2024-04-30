@@ -1,90 +1,89 @@
 # import required libraries
+from snakemake.utils import min_version
 from pathlib import Path
-from os.path import join as pjoin
-import pandas as pd
+
+
+##### set minimum snakemake version #####
+min_version("8.4.1")
+
+
+containerized: "docker://ghcr.io/gmauro/pqtl_pipeline_finemap:91f674c"
+
 
 # read the configuration file
-configfile: "../conf/config_finemap.yaml"
+configfile: "conf/config_finemap.yaml"
 
-# introduce the wildcard variable
-seqid = config["sample_seqids"]
 
-# define teh functions generating files' path
-def ws_path(file_path):
-    return str(pjoin(config.get("path_base"), file_path))
-
-def db_path(file_path):
-    return str(Path(config.get("path_data"), file_path))
-
-def ss_path(file_path):
-    return str(Path(config.get("path_pwas"), file_path))
+include: "rules/common.smk"
 
 
 rule all:
     input:
-        expand(
-            #ws_path("logs/cojo/seq.{i}.log"), 
-            ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-            i = seqid
-        )
+        expand(ws_path(f"output/break/{seqid}/{seqid}_loci.tsv"), seqid=analytes.seqid),
 
 
 rule break_locus:
     input:
-        gwas = ss_path("seq.{i}.gwas.regenie.gz")
-        #ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23))
+        gwas=get_sumstats,
     output:
-        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
+        loci=ws_path("output/break/{seqid}/{seqid}_loci.tsv"),
+    conda:
+        "envs/r_environment.yml"
     params:
-        codes = config.get("path_code"),
-        ifile = ss_path("seq.{i}"),
-        ofile = ws_path("output/break/seq.{i}/seq.{i}"),
-        seque = "seq.{i}",
-        p1    = config.get('thresholds').get('p1'),
-        p2    = config.get('thresholds').get('p2'),
-        hole  = config.get('thresholds').get('hole')
+        codes=config.get("path_code"),
+        study_id=config.get("study_id"),
+        outdir=ws_path("output/break/{seqid}/{seqid}"),
+        p1=config.get("thresholds").get("p1"),
+        p2=config.get("thresholds").get("p2"),
+        hole=config.get("thresholds").get("hole"),
+        p_label=config.get("labels").get("p_label"),
+        chr_label=config.get("labels").get("chr_label"),
+        pos_label=config.get("labels").get("pos_label"),
     log:
-        ws_path("logs/break/seq.{i}.log")
+        ws_path("logs/break/{seqid}.log"),
     resources:
-        mem_mb = 8000, runtime = 60
+        runtime=lambda wc, attempt: attempt * 30,
     shell:
         """
-        source ~/.bashrc && \
-        conda activate r_finemap &&  \
-        Rscript scripts/s03_locus_breaker.R  \
-            --pipeline_path {params.codes}  \
-            --input {input.gwas}  \
-            --study_id  {params.ofile}  \
-            --p_thresh1 {params.p1}  \
-            --p_thresh2 {params.p2}  \
+        Rscript workflow/scripts/s03_locus_breaker.R \
+            --pipeline_path {params.codes} \
+            --input {input.gwas} \
+            --study_id '{params.study_id}' \
+            --p_thresh1 {params.p1} \
+            --p_thresh2 {params.p2} \
             --hole   {params.hole} \
-            --outdir {params.ofile}  2> {log}
+            --outdir {params.outdir} \
+            --p_label '{params.p_label}' \
+            --chr_label '{params.chr_label}' \
+            --pos_label '{params.pos_label}' 2> {log}
         """
 
 
 rule run_cojo:
     input:
-        gwas = ss_path("seq.{i}.gwas.regenie.gz"),
-        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv")
+        gwas=ss_path("seq.{i}.gwas.regenie.gz"),
+        loci=ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
     output:
-        odir = ws_path("output/cojo/seq.{i}/"),
-        log  = ws_path("logs/cojo/seq.{i}.log")
+        odir=ws_path("output/cojo/seq.{i}/"),
+        log=ws_path("logs/cojo/seq.{i}.log"),
     params:
-        codes = config.get("path_code"),
-        geno  = config.get("path_geno"),
-        ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
-        ppp   = config.get('thresholds').get('ppp')
+        codes=config.get("path_code"),
+        geno=config.get("path_geno"),
+        ofile=ws_path("output/cojo/seq.{i}/seq.{i}"),
+        ppp=config.get("thresholds").get("ppp"),
     log:
-        ws_path("logs/cojo/seq.{i}.log")
+        ws_path("logs/cojo/seq.{i}.log"),
     resources:
-        mem_mb = 8000, runtime = 60
+        mem_mb=8000,
+        runtime=60,
     run:
         # read the loci and loop over each locus
         with open(input.loci) as f:
             next(f)  # Skip the header row
             for line in f:
-                chr, beg, end = line.strip().split('\t')[:3]
-                shell("""
+                chr, beg, end = line.strip().split("\t")[:3]
+                shell(
+                    """
                 source ~/.bashrc && \
                 conda activate r_finemap &&  \
                 Rscript scripts/s04_cojo_finemapping.R  \

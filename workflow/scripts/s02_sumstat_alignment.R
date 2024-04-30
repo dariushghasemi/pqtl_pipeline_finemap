@@ -29,9 +29,9 @@ if(opt$grch==37){ mappa="/ssu/bsssu/ghrc37_reference/Full_variant_map.GRCh37_sor
 
 dataset_munged <- readRDS(opt$dataset)
 
-# First check if opt$chr_tabix value is present in the summary statistics - otherwise skip the whole process 
+# First check if opt$chr_tabix value is present in the summary statistics - otherwise skip the whole process
 if(opt$chr_tabix %in% unique(dataset_munged$CHR)){
-  
+
   dataset_aligned_tmp <- dataset.align(
     dataset_munged,
     study_id=opt$study_id,
@@ -41,8 +41,8 @@ if(opt$chr_tabix %in% unique(dataset_munged$CHR)){
     grch=opt$grch
   )
   gc()
-  
+
   fwrite(dataset_aligned_tmp, paste0(opt$study_id, "_chr", opt$chr_tabix,"_dataset_aligned.tsv.gz"), sep="\t", quote=F, na=NA)
-  
+
   cat(paste0("\nGWAS summary statistics for ", opt$study_id, "in chromosome ", opt$chr_tabix," have been aligned\n"))
 }

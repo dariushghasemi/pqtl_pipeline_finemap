@@ -14,7 +14,7 @@ option_list <- list(
   make_option("--bfile", default=NULL, help="Path and prefix name of custom LD bfiles (PLINK format .bed .bim .fam)"),
   make_option("--plink2_bin", default="/ssu/gassu/software/plink/2.00_20211217/plink2", help="Path to plink2 software"),
   make_option("--gcta_bin", default="/ssu/gassu/software/GCTA/1.94.0beta/gcta64", help="Path to GCTA software"),
-  make_option("--p_thresh4", default=1e-06, help="P-value significant threshold for redefining loci boundaries post-COJO"),  
+  make_option("--p_thresh4", default=1e-06, help="P-value significant threshold for redefining loci boundaries post-COJO"),
   make_option("--hole", default=250000, help="Minimum pair-base distance between SNPs in different loci"),
   make_option("--cs_thresh", default=NULL, help="Percentage of credible set"),
   make_option("--study_id", default=NULL, help="Id of the study"),
@@ -40,7 +40,7 @@ dataset_aligned <- fread(opt$dataset_aligned, data.table=F) #%>% dplyr::filter(p
 
 # flip alleles in the summary stats to allow matching SNP id with the genotype file
 dataset_aligned <- dataset_aligned %>% mutate(
-    SNP = stringr::str_c(CHROM, GENPOS, ALLELE1, ALLELE0, sep = ":"), 
+    SNP = stringr::str_c(CHROM, GENPOS, ALLELE1, ALLELE0, sep = ":"),
   )
 
 cat("\nAlleles in the GWAS summary file were flipped!\n")
@@ -80,7 +80,7 @@ cat("\nPlot created!\n")
 
 ### Repeat only on dataset that have been conditioned!!
 conditional.dataset$results <- lapply(conditional.dataset$results, function(x){
-  
+
   ### Check if there's any SNP at p-value lower than the set threshold. Otherwise stop here
   if(isTRUE(any(x %>% pull(LOG10P) > -log10(opt$p_thresh4)))){
     new_bounds <- locus.breaker(
@@ -91,17 +91,17 @@ conditional.dataset$results <- lapply(conditional.dataset$results, function(x){
       p.label  = "LOG10P",
       chr.label= "CHROM",
       pos.label= "GENPOS")
-    
+
     # Slightly enlarge locus by 200kb!
     new_bounds <- new_bounds %>% dplyr::mutate(start=as.numeric(start)-100000, end=as.numeric(end)+100000)
-    
+
     # Remove SNPs not included in loci boundaries
     x %>% filter(bp >= new_bounds$start & bp <= new_bounds$end)
   }
 })
 
 cat("\nApply locus breaker and widen the locus!\n")
-## Remove eventually empty dataframes (caused by p_thresh4 filter)  
+## Remove eventually empty dataframes (caused by p_thresh4 filter)
 conditional.dataset$results <- conditional.dataset$results %>% discard(is.null)
 
 #saveRDS(conditional.dataset, file=paste0("condition_data_chr15_up", ".rds"))
@@ -139,7 +139,7 @@ lapply(finemap.res, function(x){
     study_id = opt$study_id,
     phenotype_id = ifelse(opt$phenotype_id=="full", NA, opt$phenotype_id),
     credible_set = paste0(x %>% filter(is_cs==TRUE) %>% pull(snp), collapse=","),
-    #### Nextflow working directory "work" hard coded - KEEP in mind!! #### 
+    #### Nextflow working directory "work" hard coded - KEEP in mind!! ####
     path_rds = paste0(gsub("(.*)/work/.*", "\\1", getwd()), "/results/finemap/", sp_file_name, "_finemap.rds"),
     path_ind_snps = paste0(gsub("(.*)/work/.*", "\\1", getwd()), "/results/gwas_and_loci_tables/", opt$study_id, "_final_ind_snps_table.tsv")
   )
