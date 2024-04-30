@@ -1,3 +1,4 @@
+# import required libraries
 from snakemake.utils import min_version
 from pathlib import Path
 from os.path import join as pjoin
@@ -8,10 +9,13 @@ min_version("8.4.1")
 
 containerized: "docker://ghcr.io/gmauro/pqtl_pipeline_finemap:bab2e7b"
 
+# read the configuration file
 configfile: "../conf/config_finemap.yaml"
 
+# introduce the wildcard variable
 seqid = config["sample_seqids"]
 
+# define the functions generating files' path
 def ws_path(file_path):
     return str(pjoin(config.get("path_base"), file_path))
 
@@ -25,94 +29,34 @@ def ss_path(file_path):
 rule all:
     input:
         expand(
-            #ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
             #ws_path("logs/cojo/seq.{i}.log"), 
             ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
             i = seqid
         )
 
-# rule munge_sumstats:
-#     input:
-#         ifile = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz")
-#     output:
-#         ofile = ws_path("output/munge/seq.{i}_dataset.rds")
-#     params:
-#         codes = config.get("path_code"),
-#         ofile = ws_path("output/munge/seq.{i}")
-#     log:
-#         ws_path("logs/munge/seq.{i}.log")
-#     resources:
-#         mem_mb = 16000, runtime = 60
-# #    conda:
-# #        "envs/r_environment.yml"
-# #    container:
-# #        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
-#     shell:
-#         """
-#         source ~/.bashrc && \
-#         conda activate r_finemap &&  \
-#         Rscript scripts/s01_sumstat_munging.R  \
-#             --pipeline_path {params.codes}  \
-#             --input {input.ifile}  \
-#             --is_molQTL FALSE  \
-#             --type quant  \
-#             --s NA  \
-#             --study_id {params.ofile}
-#         """
-
-
-# rule align_sumstats:
-#     input:
-#         ifile = ws_path("output/munge/seq.{i}_dataset.rds")
-#     output:
-#         ifile = ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"),
-#         #lfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_snplist.tsv"), i = seqid, chrom = range(1, 23)),
-#         #mfile = expand(ws_path("output/align/seq.{i}_chr{chrom}_map.tsv"), i = seqid, chrom = range(1, 23))
-#     params:
-#         codes = config.get("path_code"),
-#         ofile = ws_path("output/align/seq.{i}/seq.{i}"),
-#         chro  = "{chrom}"
-#     #log:
-#     #    ws_path("logs/align/seq.{i}_chr{chrom}.log")
-#     #conda:
-#     #    "envs/r_envirnonment.yml"
-#     resources:
-#         mem_mb = 8000, runtime = 60
-#     shell:
-#         """
-#         source ~/.bashrc && \
-#         conda activate r_finemap &&  \
-#         Rscript scripts/s02_sumstat_alignment.R  \
-#             --pipeline_path {params.codes}  \
-#             --dataset {input.ifile}  \
-#             --chr_tabix {params.chro}  \
-#             --grch 38  \
-#             --study_id {params.ofile}
-#         """
-
 
 rule break_locus:
     input:
-        gwas = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz")
+        gwas = ss_path("seq.{i}.gwas.regenie.gz")
         #ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23))
     output:
         loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-        #sfile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz")
-    params:
-        codes = config.get("path_code"),
-        ifile = ss_path("seq.{i}/seq.{i}"),
-        ofile = ws_path("output/break/seq.{i}/seq.{i}"),
-        seque = "seq.{i}", p1 = 7.30103, p2 = 5, hole = 250000
     conda:
         "envs/r_environment.yml"
+    params:
+        codes = config.get("path_code"),
+        ifile = ss_path("seq.{i}"),
+        ofile = ws_path("output/break/seq.{i}/seq.{i}"),
+        seque = "seq.{i}",
+        p1    = config.get('thresholds').get('p1'),
+        p2    = config.get('thresholds').get('p2'),
+        hole  = config.get('thresholds').get('hole')
     log:
         ws_path("logs/break/seq.{i}.log")
     resources:
         mem_mb = 8000, runtime = 60
     shell:
         """
-        source ~/.bashrc && \
-        conda activate r_finemap &&  \
         Rscript scripts/s03_locus_breaker.R  \
             --pipeline_path {params.codes}  \
             --input {input.gwas}  \
@@ -123,39 +67,25 @@ rule break_locus:
             --outdir {params.ofile}  2> {log}
         """
 
-def get_loci_data(wildcards):
-    import pandas as pd
-    loci_file = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv".format(i=wildcards))
-    loci_df = pd.read_csv(loci_file, sep="\t", usecols=[0, 1, 2]) # header=True,, names=["chr", "beg", "end"]
-    return [" ".join(row) for row in loci_df.values.tolist()]
-    #return list(loci_df.itertuples(index=False, name=None))
-
 
 rule run_cojo:
     input:
-        #ifile = ws_path("output/break/seq.{i}/seq.{i}_dataset_aligned.tsv.gz"),
-        gwas = ss_path("seq.{i}/seq.{i}.regenie.tsv.gz"),
-        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-        #loci_data = lambda wildcards: get_loci_data(wildcards.i)
+        gwas = ss_path("seq.{i}.gwas.regenie.gz"),
+        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv")
     output:
         odir = ws_path("output/cojo/seq.{i}/"),
-        log = ws_path("logs/cojo/seq.{i}.log")
+        log  = ws_path("logs/cojo/seq.{i}.log")
     params:
         codes = config.get("path_code"),
         geno  = config.get("path_geno"),
         ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
-        #chr = 9, beg = 136014227, end = 136466717,
-        #chr = 15, beg = 74136827, end = 75246105, 
-        ppp = 0.99, #seque = "seq.{i}"
+        ppp   = config.get('thresholds').get('ppp')
     log:
         ws_path("logs/cojo/seq.{i}.log")
     resources:
         mem_mb = 8000, runtime = 60
     run:
-        ##import pandas as pd
-        ##loci_df = pd.read_csv("{params.loci}", sep="\t", header=None, usecols=[0, 1, 2], names=["chr", "beg", "end"])
-        ##for _, row in loci_df.iterrows():
-        ##    chr, beg, end = row
+        # read the loci and loop over each locus
         with open(input.loci) as f:
             next(f)  # Skip the header row
             for line in f:
@@ -177,5 +107,3 @@ rule run_cojo:
                 --nf_hcoloc_v no_nf  2>> {log}
                 """
                 )
-
-#        tail -n+2 {input.loci} | cut -f1-3 | while IFS=$'\t' read -r chr beg end; do
