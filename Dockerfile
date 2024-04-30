@@ -4,6 +4,7 @@ LABEL io.github.snakemake.conda_env_hash="e5e15a739a807ed5368d20504462c433a30364
 
 # Step 1: Retrieve conda environments
 
+
 # Conda environment:
 #   source: workflow/envs/r_environment.yml
 #   prefix: /conda-envs/baff2ac264f1f12f7171aed64ac3702e
