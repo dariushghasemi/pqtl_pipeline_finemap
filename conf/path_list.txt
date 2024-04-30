@@ -1,0 +1,1 @@
+data/METAL_output_seq.2182.54_1/METAL_output_seq.2182.54_1.metal_het.tsv.gz

@@ -4,7 +4,7 @@ option_list <- list(
   make_option("--pipeline_path", default=NULL, help="Path where Rscript lives"),
   make_option("--input", default=NULL, help="Path and file name of GWAS summary statistics"),
   make_option("--p_thresh1", default=5e-08, help="Significant p-value threshold for top hits"),
-  make_option("--p_thresh2", default=1e-05, help="P-value threshold for loci borders"),  
+  make_option("--p_thresh2", default=1e-05, help="P-value threshold for loci borders"),
   make_option("--hole", default=250000, help="Minimum pair-base distance between SNPs in different loci"),
   make_option("--study_id", default=NULL, help="Id of the study"),
   make_option("--outdir", default=NULL, help="Output directory"),
@@ -38,7 +38,7 @@ file_pattern <- paste0(sumstat_name, "_chr(\\d+)_dataset_aligned.tsv.gz")
 
 # Load-in summary statistics munged and aligned, binned for all chromosomes
 #dataset_aligned_list <- list.files(pattern=paste0(opt$study_id, "_chr(\\d+)_dataset_aligned.tsv.gz"), path="./")
-##dataset_aligned_list <- list.files(pattern = file_pattern, path = sumstat_path) 
+##dataset_aligned_list <- list.files(pattern = file_pattern, path = sumstat_path)
 
 # add directory in which the files exist to the file names
 ##dataset_aligned_list_full <- paste0(sumstat_path, dataset_aligned_list)
@@ -110,5 +110,3 @@ cat("done!\n")
 cat(paste0("\n", nrow(loci_list), " significant loci identified for ", sumstat_name, "\n"))
 
 cat("\n\nLocus breaker is done!\n\n")
-
-

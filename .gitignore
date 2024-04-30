@@ -1,3 +1,9 @@
+# Snakamake
+.snakemake/*
+
+# PyCharm
+.idea/
+
 #workflow/scripts/
 workflow/logs/
 workflow/.snakemake/

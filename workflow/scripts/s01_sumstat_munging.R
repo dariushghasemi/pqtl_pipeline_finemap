@@ -8,13 +8,13 @@ option_list <- list(
   make_option("--key", default=NULL, help="If GWAS is from a molQTL, name of column reporting the trait/phenoptype"),
   make_option("--chr_lab", default="CHROM", help="Name of chromosome column in GWAS summary statistics"),
   make_option("--pos_lab", default="GENPOS", help="Name of genetic position column in GWAS summary statistics"),
-  make_option("--rsid_lab", default="ID", help="Name of rsid column"),  
-  make_option("--a1_lab", default="ALLELE1", help="Name of effect allele column"),  
-  make_option("--a0_lab", default="ALLELE0", help="Name of NON effect allele column"),  
-  make_option("--freq_lab", default="A1FREQ", help="Name of effect allele frequency column"),  
-  make_option("--n_lab", default="N", help="Name of sample size column"),  
-  make_option("--effect_lab", default="BETA", help="Name of effect size column"),  
-  make_option("--se_lab", default="SE", help="Name of standard error of effect column"), 
+  make_option("--rsid_lab", default="ID", help="Name of rsid column"),
+  make_option("--a1_lab", default="ALLELE1", help="Name of effect allele column"),
+  make_option("--a0_lab", default="ALLELE0", help="Name of NON effect allele column"),
+  make_option("--freq_lab", default="A1FREQ", help="Name of effect allele frequency column"),
+  make_option("--n_lab", default="N", help="Name of sample size column"),
+  make_option("--effect_lab", default="BETA", help="Name of effect size column"),
+  make_option("--se_lab", default="SE", help="Name of standard error of effect column"),
   make_option("--pvalue_lab", default="P", help="Name of p-value of effect column"),
   make_option("--type", default=NULL, help="Type of phenotype analysed - either 'quant' or 'cc' to denote quantitative or case-control"),
   make_option("--sdY", default=NULL, help="For a quantitative trait (type==quant), the population standard deviation of the trait. If not given, it will be estimated beta and MAF"),
@@ -71,6 +71,3 @@ dataset <- as.data.frame(dataset %>% group_by(phenotype_id, CHR, BP) %>% filter(
 
 saveRDS(dataset, file=paste0(opt$study_id, "_dataset.rds"))
 cat(paste0("\nGWAS summary statistics for ", opt$study_id, " has been harmonised!\n"))
-
-
-
