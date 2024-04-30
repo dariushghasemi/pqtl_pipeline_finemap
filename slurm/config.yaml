@@ -2,7 +2,7 @@ executor: slurm
 jobs: 250
 software-deployment-method:
    - conda
-#   - apptainer
+   - apptainer
 retries: 0
 
 # Cluster submission
