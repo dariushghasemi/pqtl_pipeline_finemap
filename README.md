@@ -50,4 +50,6 @@ conda deactivate
 
 - Locus breaker is incorporated into the pipeline. Time to do so with COJO execution (Sat, 03:45, 27-Apr-24).
 
+- After that the data manager prepared the pipeline for execution on the proteins sequence list, I created a new branch `git checkout -b develop` and switched to it for further adjusting the pipeline for COJO execution (Tue, 13:18, 30-Apr-24).
+
 Dariush

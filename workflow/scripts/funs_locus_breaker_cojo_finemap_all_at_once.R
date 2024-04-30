@@ -240,18 +240,20 @@ dataset.align <- function(dataset,
 ### locus.breaker
 locus.breaker <- function(
     res,
-    p.sig = 5e-08,
-    p.limit = 1e-05,
+    p.sig = -log10(5e-08),
+    p.limit = -log10(1e-05),
     hole.size = 250000,
-    p.label = "P",
-    chr.label = "CHR",
-    pos.label = "BP"){
-  
+    p.label = "LOG10P",
+    chr.label = "CHROM",
+    pos.label = "GENPOS"){
+
+
   res <- as.data.frame(res)
   res = res[order(as.numeric(res[, chr.label]), as.numeric(res[,pos.label])), ]
   res = res[which(res[, p.label] > p.limit), ]
   trait.res = c()
-  
+
+
   for(j in unique(res[,chr.label])) {
     res.chr = res[which(res[, chr.label] == j), ]
     if (nrow(res.chr) > 1) {
@@ -263,17 +265,17 @@ locus.breaker <- function(
             res.loc = res.chr[1:(gaps[k]), ]
           }
           else if (k == (length(gaps) + 1)) {
-            res.loc = res.chr[(gaps[k - 1] + 1):nrow(res.chr), 
+            res.loc = res.chr[(gaps[k - 1] + 1):nrow(res.chr),
             ]
           } else {
-            res.loc = res.chr[(gaps[k - 1] + 1):(gaps[k]), 
+            res.loc = res.chr[(gaps[k - 1] + 1):(gaps[k]),
             ]
           }
           if (max(res.loc[, p.label]) > p.sig) {
-            start.pos = max(res.loc[, pos.label], na.rm = T)
-            end.pos = min(res.loc[, pos.label], na.rm = T)
+            start.pos = min(res.loc[, pos.label], na.rm = T)
+            end.pos = max(res.loc[, pos.label], na.rm = T)
             chr = j
-            best.snp = res.loc[which.max(res.loc[, p.label]), 
+            best.snp = res.loc[which.max(res.loc[, p.label]),
             ]
             line.res = c(chr, start.pos, end.pos, unlist(best.snp))
             trait.res = rbind(trait.res, line.res)
@@ -281,11 +283,11 @@ locus.breaker <- function(
         }
       } else {
         res.loc = res.chr
-        if (min(res.loc[, p.label]) > p.sig) {
-          start.pos = max(res.loc[, pos.l.abel], na.rm = T)
-          end.pos = min(res.loc[, pos.label], na.rm = T)
+        if (max(res.loc[, p.label]) > p.sig) {
+          start.pos = min(res.loc[, pos.label], na.rm = T)
+          end.pos = max(res.loc[, pos.label], na.rm = T)
           chr = j
-          best.snp = res.loc[which.max(res.loc[, p.label]), 
+          best.snp = res.loc[which.max(res.loc[, p.label]),
           ]
           line.res = c(chr, start.pos, end.pos, unlist(best.snp))
           trait.res = rbind(trait.res, line.res)
@@ -295,10 +297,10 @@ locus.breaker <- function(
     else if (nrow(res.chr) == 1) {
       res.loc = res.chr
       if (max(res.loc[, p.label]) > p.sig) {
-        start.pos = max(res.loc[, pos.label], na.rm = T)
-        end.pos = min(res.loc[, pos.label], na.rm = T)
+        start.pos = min(res.loc[, pos.label], na.rm = T)
+        end.pos = max(res.loc[, pos.label], na.rm = T)
         chr = j
-        best.snp = res.loc[which.max(res.loc[, p.label]), 
+        best.snp = res.loc[which.max(res.loc[, p.label]),
         ]
         line.res = c(chr, start.pos, end.pos, unlist(best.snp))
         trait.res = rbind(trait.res, line.res)
@@ -313,7 +315,6 @@ locus.breaker <- function(
   }
   return(trait.res)
 }
-
 
 
 ### cojo.ht ###
@@ -332,7 +333,8 @@ cojo.ht=function(D=dataset_aligned
 
 ### Produce two snp.lists: 1) all SNPs to compute allele frequency, 2) only snps included in the locus
     write(D$SNP, ncol=1,file=paste0(random.number,".snp.list"))
-    write(D %>% filter(CHR==locus_chr, BP >= locus_start, BP <= locus_end) %>% pull(SNP), ncol=1,file=paste0(random.number,"_locus_only.snp.list"))
+    #write(D %>% filter(CHR==locus_chr, BP >= locus_start, BP <= locus_end) %>% pull(SNP), ncol=1,file=paste0(random.number,"_locus_only.snp.list"))
+    write(D %>% filter(CHROM==locus_chr, GENPOS >= locus_start, GENPOS <= locus_end) %>% pull(SNP), ncol=1,file=paste0(random.number,"_locus_only.snp.list"))
     
 # Compute allele frequency with Plink
     system(paste0(plink.bin," --bfile ",bfile, locus_chr, " --extract ",random.number,".snp.list --maf ", maf.thresh, " --make-bed --geno-counts --out ",random.number))
@@ -342,8 +344,10 @@ cojo.ht=function(D=dataset_aligned
 # Assign allele frequency from the LD reference  
     D <- D %>%
       left_join(freqs %>% dplyr::select(ID,FreqREF,REF), by=c("SNP"="ID")) %>%
-      mutate(FREQ=ifelse(REF==A1, FreqREF, (1-FreqREF))) %>%
-      dplyr::select("SNP","A1","A2","FREQ","b","se","p","N","snp_map","type", any_of(c("sdY","s")))
+      #mutate(FREQ=ifelse(REF==A1, FreqREF, (1-FreqREF))) %>%
+      mutate(FREQ=ifelse(REF==ALLELE0, FreqREF, (1-FreqREF))) %>%
+      #dplyr::select("SNP","A1","A2","FREQ","b","se","p","N","snp_map","type", any_of(c("sdY","s")))
+      dplyr::select("SNP","ALLELE0","ALLELE1","FREQ","BETA","SE","LOG10P","N", any_of(c("snp_map","type","sdY","s")))
   fwrite(D,file=paste0(random.number,"_sum.txt"), row.names=F,quote=F,sep="\t", na=NA)
   
 # step1 determine independent snps
@@ -352,7 +356,8 @@ cojo.ht=function(D=dataset_aligned
   if(file.exists(paste0(random.number,"_step1.jma.cojo"))){
     dataset.list=list()
     ind.snp=fread(paste0(random.number,"_step1.jma.cojo")) %>%
-      left_join(D %>% dplyr::select(SNP,snp_map,type,any_of(c("sdY", "s"))), by="SNP")
+      #left_join(D %>% dplyr::select(SNP,snp_map,type,any_of(c("sdY", "s"))), by="SNP")
+      left_join(D %>% dplyr::select(SNP,any_of(c("snp_map","type","sdY", "s"))), by="SNP")
     
     dataset.list$ind.snps <- data.frame(matrix(ncol = ncol(ind.snp), nrow = 0))
     colnames(dataset.list$ind.snps) <- colnames(ind.snp)
@@ -372,7 +377,8 @@ cojo.ht=function(D=dataset_aligned
         } else {
           # Re-add type and sdY/s info, and map SNPs!
           step2.res <- fread(paste0(random.number, "_step2.cma.cojo"), data.table=FALSE) %>%
-            left_join(D %>% dplyr::select(SNP,snp_map,type,any_of(c("sdY", "s"))), by="SNP") %>%
+            #left_join(D %>% dplyr::select(SNP,snp_map,type,any_of(c("sdY", "s"))), by="SNP") %>%
+            left_join(D %>% dplyr::select(SNP, any_of(c("snp_map","type","sdY", "s"))), by="SNP") %>%
             dplyr::mutate(cojo_snp=ind.snp$SNP[i])
           # Add SNPs to the ind.snps dataframe         
           dataset.list$ind.snps <- rbind(dataset.list$ind.snps, ind.snp[i,])
@@ -390,7 +396,8 @@ cojo.ht=function(D=dataset_aligned
       system(paste0(gcta.bin," --bfile ",random.number," --cojo-p ",p.thresh, " --maf ", maf.thresh, " --extract ",random.number,"_locus_only.snp.list --cojo-file ",random.number,"_sum.txt --cojo-cond ",random.number,"_independent.snp --out ",random.number,"_step2"))
       
       step2.res <- fread(paste0(random.number, "_step2.cma.cojo"), data.table=FALSE) %>%
-        left_join(D %>% dplyr::select(SNP,snp_map,A1,type,any_of(c("sdY", "s"))), by=c("SNP", "refA"="A1"))
+        #left_join(D %>% dplyr::select(SNP,snp_map,A1,type,any_of(c("sdY", "s"))), by=c("SNP", "refA"="A1"))
+        left_join(D %>% dplyr::select(SNP,ALLELE0, any_of(c("snp_map","type", "sdY", "s"))), by=c("SNP", "refA"="ALLELE0"))
       
       #### Add back top SNP, removed from the data frame with the conditioning step
       step2.res <- rbind.fill(
@@ -398,9 +405,12 @@ cojo.ht=function(D=dataset_aligned
         ind.snp %>% dplyr::select(-bJ,-bJ_se,-pJ,-LD_r)
       )
       step2.res$cojo_snp <- ind.snp$SNP
-      step2.res$bC <- step2.res$b
-      step2.res$bC_se <- step2.res$se
-      step2.res$pC <- step2.res$p
+      #step2.res$bC <- step2.res$b
+      #step2.res$bC_se <- step2.res$se
+      #step2.res$pC <- step2.res$p
+      step2.res$bC <- step2.res$BETA
+      step2.res$bC_se <- step2.res$SE
+      step2.res$pC <- step2.res$LOG10P
       
       dataset.list$ind.snps <- rbind(dataset.list$ind.snps, ind.snp)
       dataset.list$results[[1]]=step2.res

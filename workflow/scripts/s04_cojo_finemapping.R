@@ -37,12 +37,12 @@ cat(paste("\nlocus is:", locus_name, "\n"))
 
 # GWAS input
 dataset_aligned <- fread(opt$dataset_aligned, data.table=F) #%>% dplyr::filter(phenotype_id==opt$phenotype_id)
-
+head(dataset_aligned)
 # flip alleles in the summary stats to allow matching SNP id with the genotype file
 dataset_aligned <- dataset_aligned %>% mutate(
-    SNP = stringr::str_c(CHROM, GENPOS, ALLELE1, ALLELE0, sep = ":"), 
+    SNP = stringr::str_c(CHROM, GENPOS, ALLELE0, ALLELE1, sep = ":"), 
   )
-
+head(dataset_aligned)
 cat("\nAlleles in the GWAS summary file were flipped!\n")
 
 ###############
@@ -62,7 +62,7 @@ conditional.dataset <- cojo.ht(
   plink.bin=opt$plink2_bin
 )
 
-#saveRDS(conditional.dataset, file=paste0("condition_data_chr15.rds"))
+saveRDS(conditional.dataset, file=paste0("condition_data_chr.rds"))
 cat(paste0("\nCOJO is done! Time to draw a chart ...\n\n"))
 
 # Plot conditioned GWAS sum stats
