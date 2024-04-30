@@ -7,7 +7,7 @@ path_geno: "/home/dariush.ghasemi/projects/pqtl_pipeline_ldsc/output/plinkFormat
 sample_seqids: ["13124.20"] #"12708.91", "12730.3"
 
 thresholds:
-  - p1: 7.30103
-  - p2: 5
-  - ppp: .99
-  - hole: 250000
+  p1: 5e-08
+  p2: 1e-05
+  ppp: 0.99
+  hole: 250000

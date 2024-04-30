@@ -29,19 +29,19 @@ source(paste0(opt$pipeline_path, "funs_locus_breaker_cojo_finemap_all_at_once.R"
 
 # Slightly enlarge locus by 200kb!
 locus_name <- paste0(opt$chr, "_", opt$start, "_", opt$end)
-opt$chr <- as.numeric(opt$chr)
-opt$start <- as.numeric(opt$start) -100000
-opt$end <- as.numeric(opt$end) + 100000
+opt$chr    <- as.numeric(opt$chr)
+opt$start  <- as.numeric(opt$start) -100000
+opt$end    <- as.numeric(opt$end) + 100000
+
 cat(paste("\nlocus is:", locus_name, "\n"))
 
 # GWAS input
-dataset_aligned <- fread(opt$dataset_aligned, data.table=F) %>% dplyr::filter(phenotype_id==opt$phenotype_id)
+dataset_aligned <- fread(opt$dataset_aligned, data.table=F) #%>% dplyr::filter(phenotype_id==opt$phenotype_id)
 
 # flip alleles in the summary stats to allow matching SNP id with the genotype file
 dataset_aligned <- dataset_aligned %>% mutate(
-    SNP = stringr::str_c(CHR, BP, A2, A1, sep = ":"), 
-    #snp_map = stringr::str_c("chr", snp2)
-  ) #%>% select(-snp2)
+    SNP = stringr::str_c(CHROM, GENPOS, ALLELE1, ALLELE0, sep = ":"), 
+  )
 
 cat("\nAlleles in the GWAS summary file were flipped!\n")
 
@@ -68,7 +68,7 @@ cat(paste0("\nCOJO is done! Time to draw a chart ...\n\n"))
 # Plot conditioned GWAS sum stats
 dir.create(paste0(opt$outdir), recursive = TRUE)
 #pdf(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.pdf"), height=3.5*nrow(conditional.dataset$ind.snps), width=10) ### have the original loci boundaries in the name, or the slightly enlarged ones?
-png(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.png"), res = 300, units = "in", height=3.5*nrow(conditional.dataset$ind.snps), width=10)
+png(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.png"), res = 300, units = "in", height=3.5*nrow(conditional.dataset$ind.snps)+2, width=10)
 plot.cojo.ht(conditional.dataset) + patchwork::plot_annotation(paste("Locus chr", locus_name))
 dev.off()
 
@@ -82,15 +82,15 @@ cat("\nPlot created!\n")
 conditional.dataset$results <- lapply(conditional.dataset$results, function(x){
   
   ### Check if there's any SNP at p-value lower than the set threshold. Otherwise stop here
-  if(isTRUE(any(x %>% pull(pC) < opt$p_thresh4))){
+  if(isTRUE(any(x %>% pull(LOG10P) > -log10(opt$p_thresh4)))){
     new_bounds <- locus.breaker(
       x,
-      p.sig=as.numeric(opt$p_thresh4),
-      p.limit=as.numeric(opt$p_thresh3),
-      hole.size=opt$hole,
-      p.label="pC",
-      chr.label="Chr",
-      pos.label="bp")
+      p.sig    = as.numeric(-log10(opt$p_thresh4)),
+      p.limit  = as.numeric(-log10(opt$p_thresh3)),
+      hole.size= opt$hole,
+      p.label  = "LOG10P",
+      chr.label= "CHROM",
+      pos.label= "GENPOS")
     
     # Slightly enlarge locus by 200kb!
     new_bounds <- new_bounds %>% dplyr::mutate(start=as.numeric(start)-100000, end=as.numeric(end)+100000)
