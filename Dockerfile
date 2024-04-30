@@ -1,12 +1,12 @@
 FROM condaforge/mambaforge:latest
 LABEL io.github.snakemake.containerized="true"
-LABEL io.github.snakemake.conda_env_hash="554edbb710da5a2b8cbb45a61e2f586edded22fb58489eed03ac72773f61099a"
+LABEL io.github.snakemake.conda_env_hash="e5e15a739a807ed5368d20504462c433a3036490881814232e4aee2bf799dda1"
 
 # Step 1: Retrieve conda environments
 
 # Conda environment:
-#   source: envs/r_environment.yml
-#   prefix: /conda-envs/50a3fe91d9589eca4a256154c89f39b6
+#   source: workflow/envs/r_environment.yml
+#   prefix: /conda-envs/baff2ac264f1f12f7171aed64ac3702e
 #   name: r_finemap
 #   channels:
 #     - conda-forge
@@ -31,10 +31,10 @@ LABEL io.github.snakemake.conda_env_hash="554edbb710da5a2b8cbb45a61e2f586edded22
 #     - r-Matrix=1.6-5
 #     - bioconductor-Gviz=1.46.1
 #     - bioconductor-EnsDb.Hsapiens.v75=2.99.0
-RUN mkdir -p /conda-envs/50a3fe91d9589eca4a256154c89f39b6
-COPY workflow/envs/r_environment.yml /conda-envs/50a3fe91d9589eca4a256154c89f39b6/environment.yaml
+RUN mkdir -p /conda-envs/baff2ac264f1f12f7171aed64ac3702e
+COPY workflow/envs/r_environment.yml /conda-envs/baff2ac264f1f12f7171aed64ac3702e/environment.yaml
 
 # Step 2: Generate conda environments
 
-RUN mamba env create --prefix /conda-envs/50a3fe91d9589eca4a256154c89f39b6 --file /conda-envs/50a3fe91d9589eca4a256154c89f39b6/environment.yaml && \
+RUN mamba env create --prefix /conda-envs/baff2ac264f1f12f7171aed64ac3702e --file /conda-envs/baff2ac264f1f12f7171aed64ac3702e/environment.yaml && \
     mamba clean --all -y
