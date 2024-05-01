@@ -236,8 +236,85 @@ dataset.align <- function(dataset,
 }
 
 
+### locus.breaker: works with p
+locus.breaker.p <- function(
+    res,
+    p.sig = 5e-08,
+    p.limit = 1e-05,
+    hole.size = 250000,
+    p.label = "P",
+    chr.label = "CHR",
+    pos.label = "BP"){
+  
+  res <- as.data.frame(res)
+  res = res[order(as.numeric(res[, chr.label]), as.numeric(res[,pos.label])), ]
+  res = res[which(res[, p.label] < p.limit), ]
+  trait.res = c()
+  
+  for(j in unique(res[,chr.label])) {
+    res.chr = res[which(res[, chr.label] == j), ]
+    if (nrow(res.chr) > 1) {
+      holes = res.chr[, pos.label][-1] - res.chr[, pos.label][-length(res.chr[,pos.label])]
+      gaps = which(holes > hole.size)
+      if (length(gaps) > 0) {
+        for (k in 1:(length(gaps) + 1)) {
+          if (k == 1) {
+            res.loc = res.chr[1:(gaps[k]), ]
+          }
+          else if (k == (length(gaps) + 1)) {
+            res.loc = res.chr[(gaps[k - 1] + 1):nrow(res.chr), 
+            ]
+          } else {
+            res.loc = res.chr[(gaps[k - 1] + 1):(gaps[k]), 
+            ]
+          }
+          if (min(res.loc[, p.label]) < p.sig) {
+            start.pos = min(res.loc[, pos.label], na.rm = T)
+            end.pos = max(res.loc[, pos.label], na.rm = T)
+            chr = j
+            best.snp = res.loc[which.min(res.loc[, p.label]), 
+            ]
+            line.res = c(chr, start.pos, end.pos, unlist(best.snp))
+            trait.res = rbind(trait.res, line.res)
+          }
+        }
+      } else {
+        res.loc = res.chr
+        if (min(res.loc[, p.label]) < p.sig) {
+          start.pos = min(res.loc[, pos.label], na.rm = T)
+          end.pos = max(res.loc[, pos.label], na.rm = T)
+          chr = j
+          best.snp = res.loc[which.min(res.loc[, p.label]), 
+          ]
+          line.res = c(chr, start.pos, end.pos, unlist(best.snp))
+          trait.res = rbind(trait.res, line.res)
+        }
+      }
+    }
+    else if (nrow(res.chr) == 1) {
+      res.loc = res.chr
+      if (min(res.loc[, p.label]) < p.sig) {
+        start.pos = min(res.loc[, pos.label], na.rm = T)
+        end.pos = max(res.loc[, pos.label], na.rm = T)
+        chr = j
+        best.snp = res.loc[which.min(res.loc[, p.label]), 
+        ]
+        line.res = c(chr, start.pos, end.pos, unlist(best.snp))
+        trait.res = rbind(trait.res, line.res)
+      }
+    }
+  }
+  if(!is.null(trait.res)){
+    trait.res = as.data.frame(trait.res, stringsAsFactors = FALSE)
+    trait.res = trait.res[, -(which(names(trait.res) == chr.label))]
+    names(trait.res)[1:3] = c("chr", "start", "end")
+    rownames(trait.res) <- NULL
+  }
+  return(trait.res)
+}
 
-### locus.breaker
+
+### locus.breaker: works with -log10p
 locus.breaker <- function(
     res,
     p.sig = -log10(5e-08),
@@ -316,7 +393,7 @@ locus.breaker <- function(
   return(trait.res)
 }
 
-
+#Saving the LD structure of 1 independent signals to [wMTN5Enzsjvd67MgL84B_step1.ldr.cojo] ...
 ### cojo.ht ###
 ### Performs --cojo-slct first to identify all independent SNPs and --cojo-cond then to condition upon identified SNPs
 cojo.ht=function(D=dataset_aligned
@@ -405,12 +482,9 @@ cojo.ht=function(D=dataset_aligned
         ind.snp %>% dplyr::select(-bJ,-bJ_se,-pJ,-LD_r)
       )
       step2.res$cojo_snp <- ind.snp$SNP
-      #step2.res$bC <- step2.res$b
-      #step2.res$bC_se <- step2.res$se
-      #step2.res$pC <- step2.res$p
-      step2.res$bC <- step2.res$BETA
-      step2.res$bC_se <- step2.res$SE
-      step2.res$pC <- step2.res$LOG10P
+      step2.res$bC <- step2.res$b
+      step2.res$bC_se <- step2.res$se
+      step2.res$pC <- step2.res$p
       
       dataset.list$ind.snps <- rbind(dataset.list$ind.snps, ind.snp)
       dataset.list$results[[1]]=step2.res
@@ -433,13 +507,15 @@ finemap.cojo <- function(D, cs_threshold=0.99){
 # Format input  
     D <- D %>%
       dplyr::mutate(varbeta=bC_se^2) %>%
+      #dplyr::select("snp_map","Chr","bp","bC","varbeta","n","pC","freq","type",any_of(c("sdY","s"))) %>%
       dplyr::select("snp_map","Chr","bp","bC","varbeta","n","pC","freq","type",any_of(c("sdY","s"))) %>%
       rename("snp"="snp_map","chr"="Chr","position"="bp","beta"="bC","N"="n","pvalues"="pC","MAF"="freq")
   
   D <- as.list(na.omit(D)) ### move to list and keep unique value of "type" otherwise ANNOYING ERROR!
   D$type <- unique(D$type)
-  if(D$type=="cc"){D$s <- unique(D$s)}else{D$sdY <- unique(D$sdY)}
-  
+  #if(D$type=="cc"){D$s <- unique(D$s)}else{D$sdY <- unique(D$sdY)}
+  D$sdY <- unique(D$sdY)
+
 # Finemap
   fine.res <- coloc::finemap.abf(D) %>%
     mutate(cojo_snp=cojo_snp, bC=c(D$beta, NA)) %>%
@@ -461,6 +537,15 @@ finemap.cojo <- function(D, cs_threshold=0.99){
 
 
 
+my_theme <- function(...){
+  theme(
+  legend.position = c(.15, .95),
+  axis.title.x = element_blank(),
+  axis.title = element_text(size = 14, face = 2),
+  axis.text =  element_text(size = 12, face = 2)
+  )
+}
+
 ### plot.cojo.ht ###
 plot.cojo.ht=function(cojo.ht.obj){
   
@@ -476,14 +561,14 @@ plot.cojo.ht=function(cojo.ht.obj){
     
     p1 <- ggplot(cojo.ht.obj$results[[i]], aes(x=bp,y=-log10(p))) +
       geom_point(alpha=0.6,size=3)+
-      theme_minimal()+
+      theme_classic() + my_theme() +
       geom_point(data=cojo.ht.obj$ind.snps,aes(x=bp,y=-log10(p),fill=snp_map),size=6,shape=23) +
       guides(fill=guide_legend(title="SNP"))
     
     p2 <- ggplot(whole.dataset,aes(x=bp,y=-log10(pC),color=signal)) +
       facet_grid(signal~.) +
       geom_point(alpha=0.8,size=3) +
-      theme_minimal() +
+      theme_classic() + my_theme() +
       ggtitle("Conditioned results")
     
     p3 <- p1/p2 + plot_layout(heights = c(1, nrow(cojo.ht.obj$ind.snps)+0.2))
@@ -492,11 +577,12 @@ plot.cojo.ht=function(cojo.ht.obj){
     
     p3 <- ggplot(cojo.ht.obj$results[[1]], aes(x=bp,y=-log10(p))) +
       geom_point(alpha=0.6,size=3)+
-      theme_minimal()+
-      geom_point(data=cojo.ht.obj$ind.snps,aes(x=bp,y=-log10(p),fill=snp_map),size=6,shape=23)
+      theme_classic() + my_theme() +
+      geom_point(data=cojo.ht.obj$ind.snps,aes(x=bp,y=-log10(p),fill=SNP),size=6,shape=23)
   }
   (p3)
 }
+
 
 
 

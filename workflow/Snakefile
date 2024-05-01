@@ -67,7 +67,7 @@ rule run_cojo:
         gwas = ss_path("seq.{i}.gwas.regenie.gz"),
         loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv")
     output:
-        odir = ws_path("output/cojo/seq.{i}/"),
+        odir = directory(ws_path("output/cojo/seq.{i}/")),
         log  = ws_path("logs/cojo/seq.{i}.log")
     params:
         codes = config.get("path_code"),
