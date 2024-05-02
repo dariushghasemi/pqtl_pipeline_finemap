@@ -238,7 +238,7 @@ dataset.align <- function(dataset,
 
 
 ### locus.breaker
-locus.breaker <- function(
+locus.breaker.p <- function(
     res,
     p.sig = 5e-08,
     p.limit = 1e-05,
@@ -314,6 +314,86 @@ locus.breaker <- function(
   return(trait.res)
 }
 
+
+
+### locus.breaker: works with -log10p
+locus.breaker <- function(
+    res,
+    p.sig = -log10(5e-08),
+    p.limit = -log10(1e-05),
+    hole.size = 250000,
+    p.label = "LOG10P",
+    chr.label = "CHROM",
+    pos.label = "GENPOS"){
+
+
+  res <- as.data.frame(res)
+  res = res[order(as.numeric(res[, chr.label]), as.numeric(res[,pos.label])), ]
+  res = res[which(res[, p.label] > p.limit), ]
+  trait.res = c()
+
+
+  for(j in unique(res[,chr.label])) {
+    res.chr = res[which(res[, chr.label] == j), ]
+    if (nrow(res.chr) > 1) {
+      holes = res.chr[, pos.label][-1] - res.chr[, pos.label][-length(res.chr[,pos.label])]
+      gaps = which(holes > hole.size)
+      if (length(gaps) > 0) {
+        for (k in 1:(length(gaps) + 1)) {
+          if (k == 1) {
+            res.loc = res.chr[1:(gaps[k]), ]
+          }
+          else if (k == (length(gaps) + 1)) {
+            res.loc = res.chr[(gaps[k - 1] + 1):nrow(res.chr),
+            ]
+          } else {
+            res.loc = res.chr[(gaps[k - 1] + 1):(gaps[k]),
+            ]
+          }
+          if (max(res.loc[, p.label]) > p.sig) {
+            start.pos = min(res.loc[, pos.label], na.rm = T)
+            end.pos = max(res.loc[, pos.label], na.rm = T)
+            chr = j
+            best.snp = res.loc[which.max(res.loc[, p.label]),
+            ]
+            line.res = c(chr, start.pos, end.pos, unlist(best.snp))
+            trait.res = rbind(trait.res, line.res)
+          }
+        }
+      } else {
+        res.loc = res.chr
+        if (max(res.loc[, p.label]) > p.sig) {
+          start.pos = min(res.loc[, pos.label], na.rm = T)
+          end.pos = max(res.loc[, pos.label], na.rm = T)
+          chr = j
+          best.snp = res.loc[which.max(res.loc[, p.label]),
+          ]
+          line.res = c(chr, start.pos, end.pos, unlist(best.snp))
+          trait.res = rbind(trait.res, line.res)
+        }
+      }
+    }
+    else if (nrow(res.chr) == 1) {
+      res.loc = res.chr
+      if (max(res.loc[, p.label]) > p.sig) {
+        start.pos = min(res.loc[, pos.label], na.rm = T)
+        end.pos = max(res.loc[, pos.label], na.rm = T)
+        chr = j
+        best.snp = res.loc[which.max(res.loc[, p.label]),
+        ]
+        line.res = c(chr, start.pos, end.pos, unlist(best.snp))
+        trait.res = rbind(trait.res, line.res)
+      }
+    }
+  }
+  if(!is.null(trait.res)){
+    trait.res = as.data.frame(trait.res, stringsAsFactors = FALSE)
+    trait.res = trait.res[, -(which(names(trait.res) == chr.label))]
+    names(trait.res)[1:3] = c("chr", "start", "end")
+    rownames(trait.res) <- NULL
+  }
+  return(trait.res)
+}
 
 
 ### cojo.ht ###
