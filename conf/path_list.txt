@@ -1,1 +1,1 @@
-/exchange/healthds/pQTL/results/META_CHRIS_INTERVAL/qced_sumstats/metal/METAL_output_seq.2182.54_1/METAL_output_seq.2182.54_1.metal_het.tsv.gz
+/exchange/healthds/pQTL/results/INTERVAL/chunk_1083/chunk_1083_output/chunk_1083/results/gwas/seq.13615.60.gwas.regenie.gz
