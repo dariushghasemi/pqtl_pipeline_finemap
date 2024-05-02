@@ -6,10 +6,15 @@ path_geno: "/home/dariush.ghasemi/projects/pqtl_pipeline_ldsc/output/plinkFormat
 sumstats_path: conf/path_list.txt
 workspace_path: "results"
 
+#labels:
+#  p_label: "log(P)"
+#  chr_label: "Chromosome"
+#  pos_label: "Position"
+
 labels:
-  p_label: "log(P)"
-  chr_label: "Chromosome"
-  pos_label: "Position"
+  p_label: "LOG10P"
+  chr_label: "CHROM"
+  pos_label: "GENPOS"
 
 study_id: "study_id"
 
