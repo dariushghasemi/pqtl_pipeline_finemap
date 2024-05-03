@@ -19,3 +19,5 @@ output/
 michele.smk
 tuto.smk
 test/
+dag.svg
+results/

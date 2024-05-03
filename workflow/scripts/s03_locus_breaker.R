@@ -18,11 +18,14 @@ opt = parse_args(opt_parser);
 ## Source function R functions
 source(paste0(opt$pipeline_path, "funs_locus_breaker_cojo_finemap_all_at_once.R"))
 cat("\n\nChecking input file...")
+
 ## Throw error message - GWAS summary statistics file MUST be provided!
 if(is.null(opt$input)){
   print_help(opt_parser)
   stop("Please specify the path and file name of your GWAS summary statistics in --path option", call.=FALSE)
 }
+
+cat("done!\n")
 
 ##################################
 # Load in and munge GWAS sum stats
@@ -36,28 +39,12 @@ cat("done!\n")
 #sumstat_path <- paste0(dirname(opt$study_id), "/")
 #file_pattern <- paste0(sumstat_name, "_chr(\\d+)_dataset_aligned.tsv.gz")
 
-# Load-in summary statistics munged and aligned, binned for all chromosomes
-#dataset_aligned_list <- list.files(pattern=paste0(opt$study_id, "_chr(\\d+)_dataset_aligned.tsv.gz"), path="./")
-##dataset_aligned_list <- list.files(pattern = file_pattern, path = sumstat_path)
-
-# add directory in which the files exist to the file names
-##dataset_aligned_list_full <- paste0(sumstat_path, dataset_aligned_list)
-
-# Merge them
-# dataset_aligned <- as.data.frame(rbindlist(lapply(dataset_aligned_list_full, function(x){
-#   fread(x, data.table=F)
-# }))) %>% arrange(CHR)
-
-# Save
-#fwrite(dataset_aligned, paste0(opt$study_id, "_dataset_aligned.tsv.gz"), quote=F, na=NA, sep="\t")
-#fwrite(dataset_aligned, paste0(opt$outdir, "_dataset_aligned.tsv.gz"), quote=F, na=NA, sep="\t")
-
 
 ################
 # Locus breaker
 ################
 
-cat("\n\nDefining locus...")
+cat(paste0("\n\nDefining locus..."))
 
 # loci_list <- as.data.frame(rbindlist(
 #   lapply(dataset_aligned %>% group_split(phenotype_id), function(x){
@@ -79,23 +66,24 @@ cat("\n\nDefining locus...")
 # function to find the index variants at each locus
 check_signif <- function(x){
   ### Check if there's any SNP at p-value lower than the set threshold. Otherwise stop here
-  if(any(x %>% pull(opt$p_label) > -log10(opt$p_thresh1))){
+  if(any(x %>% pull(LOG10P) > -log10(opt$p_thresh1))){
   ### Loci identification
   locus.breaker(
     x,
     p.sig     = -log10(opt$p_thresh1),
     p.limit   = -log10(opt$p_thresh2),
     hole.size = opt$hole,
-    p.label   = opt$p_label, #"LOG10P",
-    chr.label = opt@chr_label,  #"CHROM",
-    pos.label = opt@pos_label #"GENPOS"
+    p.label   = "LOG10P", #opt$p_label, #
+    chr.label = "CHROM", #opt@chr_label,  #
+    pos.label = "GENPOS" #opt@pos_label #
   )
   }
 } %>% discard(is.null)
-
+cat(paste0("apply the function..."))
 #list of index variants
 loci_list <- check_signif(gwas)
-cat("done!\n")
+loci_list
+cat(paste0("done!\n"))
 
 ### Add study ID to the loci table. Save
 #loci_list <- loci_list %>% mutate(study_id=opt$study_id)

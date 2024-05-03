@@ -19,7 +19,7 @@ include: "rules/common.smk"
 
 rule all:
     input:
-        expand(ws_path(f"break/{seqid}/{seqid}_loci.tsv"), seqid=analytes.seqid),
+        expand(ws_path("break/{seqid}/{seqid}_loci.tsv"), seqid=analytes.seqid),
 
 
 rule break_locus:
@@ -31,7 +31,6 @@ rule break_locus:
         "envs/r_environment.yml"
     params:
         codes=config.get("path_code"),
-        #study_id=config.get("study_id"),
         study_id="{seqid}",
         outdir=ws_path("break/{seqid}/{seqid}"),
         p1=config.get("thresholds").get("p1"),
@@ -60,8 +59,6 @@ rule break_locus:
             --pos_label '{params.pos_label}' 2> {log}
         """
 
-#        source ~/.bashrc && \
-        # conda activate r_finemap &&  \
 
 rule run_cojo:
     input:
