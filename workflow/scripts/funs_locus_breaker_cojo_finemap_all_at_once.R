@@ -316,13 +316,15 @@ locus.breaker.p <- function(
 
 
 
+
+
 ### locus.breaker: works with -log10p
 locus.breaker <- function(
     res,
-    p.sig = -log10(5e-08),
-    p.limit = -log10(1e-05),
+    p.sig     = -log10(5e-08),
+    p.limit   = -log10(1e-06),
     hole.size = 250000,
-    p.label = "LOG10P",
+    p.label   = "LOG10P",
     chr.label = "CHROM",
     pos.label = "GENPOS"){
 
@@ -394,6 +396,7 @@ locus.breaker <- function(
   }
   return(trait.res)
 }
+
 
 
 ### cojo.ht ###
