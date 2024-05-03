@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --job-name loop_abf
-#SBATCH --output %j_loop_abf.log
-#SBATCH --partition cpuq #-interactive
+#SBATCH --job-name region_def
+#SBATCH --output %j_region_def.log
+#SBATCH --partition cpuq
 #SBATCH --cpus-per-task 1
 #SBATCH --mem 4G
-#SBATCH --time 10-00:00:00
+#SBATCH --time 30-00:00:00
 
 source ~/.bashrc
 module -s load singularity/3.8.5

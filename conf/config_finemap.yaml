@@ -1,4 +1,4 @@
-path_base: "/home/dariush.ghasemi/projects/pqtl_pipeline_finemap"
+path_base: "/scratch/dariush.ghasemi/projects/pqtl_pipeline_finemap"
 path_code: "workflow/scripts/"
 path_pwas: "/exchange/healthds/pQTL/results/INTERVAL/chunk_1083/chunk_1083_output/chunk_1083/results/gwas"
 path_geno: "/home/dariush.ghasemi/projects/pqtl_pipeline_ldsc/output/plinkFormat/impute_recoded_selected_sample_filter_hq_var_chr"
@@ -6,15 +6,20 @@ path_geno: "/home/dariush.ghasemi/projects/pqtl_pipeline_ldsc/output/plinkFormat
 sumstats_path: conf/path_list.txt
 workspace_path: "results"
 
+#labels:
+#  p_label: "log(P)"
+#  chr_label: "Chromosome"
+#  pos_label: "Position"
+
 labels:
-  p_label: "log(P)"
-  chr_label: "Chromosome"
-  pos_label: "Position"
+  p_label: "LOG10P"
+  chr_label: "CHROM"
+  pos_label: "GENPOS"
 
 study_id: "study_id"
 
 thresholds:
   p1: 5e-08
-  p2: 1e-05
+  p2: 1e-06
   ppp: 0.99
   hole: 250000
