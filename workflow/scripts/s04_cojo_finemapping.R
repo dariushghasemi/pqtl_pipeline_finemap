@@ -9,6 +9,7 @@ option_list <- list(
   make_option("--end", default=NULL, help="Locus ending position"),
   make_option("--phenotype_id", default=NULL, help="Trait for which the locus boundaries have been identified - relevant in cases of molQTLs"),
   make_option("--dataset_aligned", default=NULL, help="GENOME-WIDE munged and aligned dataset file"),
+  make_option("--mapping", default=NULL, help="Mapping file containing variants IDs matching with genotype bfile"),
   make_option("--p_thresh3", default=1e-04, help="Noise p-values threshold for COJO"),
   make_option("--maf", default=1e-04, help="MAF filter", metavar="character"),
   make_option("--bfile", default=NULL, help="Path and prefix name of custom LD bfiles (PLINK format .bed .bim .fam)"),
@@ -35,16 +36,24 @@ opt$end    <- as.numeric(opt$end) + 100000
 
 cat(paste("\nlocus is:", locus_name, "\n"))
 
+# Mapping file
+pwas_map <- fread(opt$mapping, data.table=F)
+
 # GWAS input
-dataset_aligned <- fread(opt$dataset_aligned, data.table=F) %>% 
+dataset_aligned <- fread(opt$dataset_aligned, data.table=F)
+
+dataset_aligned <- dataset_aligned %>%
   #dplyr::filter(phenotype_id==opt$phenotype_id)
-  # flip alleles in the summary stats to allow matching SNP id with the genotype file
+  select(- TEST, - EXTRA) %>%
+  # merge summary stats with map file. Then, SNP id matches with genotype file
+  left_join(head(map_file, 1000), by = c("ID" = "PREVIOUS_ID")) %>%
   dplyr::mutate(
-    SNP = stringr::str_c(CHROM, GENPOS, ALLELE0, ALLELE1, sep = ":"),
-    snp_map = SNP,
+    snp_map = ID, # workflow needs it to report cojo results
     sdY = coloc:::sdY.est(SE, A1FREQ, N),
     type = paste0('quant')
-  )
+  ) %>%
+  rename(SNP = ID) #to be used by COJO to merge with genotype
+
 
 cat("\nAlleles in the GWAS summary file were flipped!\n")
 

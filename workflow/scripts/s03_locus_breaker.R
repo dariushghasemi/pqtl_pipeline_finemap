@@ -29,9 +29,9 @@ cat("\n\nReading GWAS file...")
 gwas <- data.table::fread(opt$input, data.table = F)
 cat("done!\n")
 # separate path from seqid given by study_id, then make name pattern
-sumstat_name <- basename(opt$study_id)
-sumstat_path <- paste0(dirname(opt$study_id), "/")
-file_pattern <- paste0(sumstat_name, "_chr(\\d+)_dataset_aligned.tsv.gz")
+# sumstat_name <- basename(opt$study_id)
+# sumstat_path <- paste0(dirname(opt$study_id), "/")
+# file_pattern <- paste0(sumstat_name, "_chr(\\d+)_dataset_aligned.tsv.gz")
 
 # Load-in summary statistics munged and aligned, binned for all chromosomes
 #dataset_aligned_list <- list.files(pattern=paste0(opt$study_id, "_chr(\\d+)_dataset_aligned.tsv.gz"), path="./")
@@ -96,7 +96,7 @@ cat("done!\n")
 
 ### Add study ID to the loci table. Save
 #loci_list <- loci_list %>% mutate(study_id=opt$study_id)
-loci_list$study_id <- sumstat_name
+loci_list$study_id <- basename(opt$study_id)
 
 cat("\n\nSaving index variants...")
 #fwrite(loci_list, paste0(opt$study_id, "_loci.tsv"), sep="\t", quote=F, na=NA)
