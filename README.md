@@ -54,7 +54,6 @@ conda deactivate
 
 - The rule of COJO-ABF fine-mapping was modified properly to work with GWAS results including -LOG10P. The rule gets executed after a successful run of the locus breaker rule in the pipeline. The changes in the development branch need to be merged with the main branch later. Before lunching pipeline, we need to incorporate mapping file in run_COJO rule to tackle the issue related to GWAS results file with alleles in alphabetical order (Wed, 11:50, 01-May-24).
 
-<<<<<<< HEAD
 - The list of proteins in order to test the pipeline (Fri, 14:45, 03-May-24).
 
 ```bash
@@ -66,8 +65,6 @@ ls /exchange/healthds/pQTL/results/INTERVAL/chunk_*/chunk_*_output/chunk_*/resul
 ```
 
 - Locus breker results were integrated and sent to the PI (20:06, Mon, 06-May-24).
-=======
 - After screening the results of locus breaker function, it turned out that there are many loci whose width were so lengthy or even equal to zero. Need to check its performance once applied to the meta-analysis and then draw LocusZoom plots (Fri, 17:30, 10-May-24).  
->>>>>>> develop
 
 Dariush
