@@ -3,8 +3,8 @@ path_code: "workflow/scripts/"
 path_pwas: "/exchange/healthds/pQTL/results/INTERVAL/chunk_1083/chunk_1083_output/chunk_1083/results/gwas"
 path_geno: "/home/dariush.ghasemi/projects/pqtl_pipeline_ldsc/output/plinkFormat/impute_recoded_selected_sample_filter_hq_var_chr"
 
-sumstats_path: conf/path_list.txt
-workspace_path: "results"
+sumstats_path: conf/path_list_meta.txt
+workspace_path: "results/meta"
 
 #labels:
 #  p_label: "log(P)"
@@ -12,11 +12,11 @@ workspace_path: "results"
 #  pos_label: "Position"
 
 labels:
-  p_label: "LOG10P"
-  chr_label: "CHROM"
-  pos_label: "GENPOS"
+  p_label: "MLOG10P"
+  chr_label: "CHR"
+  pos_label: "POS"
 
-study_id: "study_id"
+#study_id: "study_id"
 
 thresholds:
   p1: 5e-08

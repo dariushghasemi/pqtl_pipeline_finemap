@@ -34,11 +34,6 @@ cat("done!\n")
 cat("\n\nReading GWAS file...")
 gwas <- data.table::fread(opt$input, data.table = F)
 cat("done!\n")
-# separate path from seqid given by study_id, then make name pattern
-#sumstat_name <- basename(opt$study_id)
-#sumstat_path <- paste0(dirname(opt$study_id), "/")
-#file_pattern <- paste0(sumstat_name, "_chr(\\d+)_dataset_aligned.tsv.gz")
-
 
 ################
 # Locus breaker
@@ -46,55 +41,35 @@ cat("done!\n")
 
 cat(paste0("\n\nDefining locus..."))
 
-# loci_list <- as.data.frame(rbindlist(
-#   lapply(dataset_aligned %>% group_split(phenotype_id), function(x){
-#     ### Check if there's any SNP at p-value lower than the set threshold. Otherwise stop here
-#     if(any(x %>% pull(p) < opt$p_thresh1)){
-#       ### Loci identification
-#       locus.breaker(
-#         x,
-#         p.sig=opt$p_thresh1,
-#         p.limit=opt$p_thresh2,
-#         hole.size=opt$hole,
-#         p.label="p",
-#         chr.label="CHR",
-#         pos.label="BP")
-#     }
-#   }) %>% discard(is.null)
-# ))
-
 # function to find the index variants at each locus
 check_signif <- function(x){
   ### Check if there's any SNP at p-value lower than the set threshold. Otherwise stop here
-  if(any(x %>% pull(LOG10P) > -log10(opt$p_thresh1))){
+  if(any(x %>% pull(opt$p_label) > -log10(opt$p_thresh1))){
   ### Loci identification
   locus.breaker(
     x,
     p.sig     = -log10(opt$p_thresh1),
     p.limit   = -log10(opt$p_thresh2),
     hole.size = opt$hole,
-    p.label   = "LOG10P", #opt$p_label, #
-    chr.label = "CHROM", #opt@chr_label,  #
-    pos.label = "GENPOS" #opt@pos_label #
+    p.label   = opt$p_label,  
+    chr.label = opt$chr_label,
+    pos.label = opt$pos_label
   )
   }
 } %>% discard(is.null)
+
 cat(paste0("apply the function..."))
+
 #list of index variants
 loci_list <- check_signif(gwas)
-loci_list
-cat(paste0("done!\n"))
+
+cat(paste0("done!\n\nSaving index variants..."))
 
 ### Add study ID to the loci table. Save
-#loci_list <- loci_list %>% mutate(study_id=opt$study_id)
 loci_list$study_id <- opt$study_id
-loci_list
-cat("\n\nSaving index variants...")
-#fwrite(loci_list, paste0(opt$study_id, "_loci.tsv"), sep="\t", quote=F, na=NA)
+
 fwrite(loci_list, paste0(opt$outdir, "_loci.tsv"), sep="\t", quote=F, na=NA)
-cat("done!\n")
+cat(paste0("done!\n"))
 
-#cat(paste0("\n", nrow(loci_list), " significant loci identified for ", opt$study_id, "\n"))
-cat(paste0("\n", nrow(loci_list), " significant loci identified for ", loci_list$study_id, "\n"))
-
-cat("\n\nLocus breaker is finished!\n\n")
+cat(paste0("\n", nrow(loci_list), " significant loci identified for ", opt$study_id, "\n"))
+cat(paste0("\n\nLocus breaker is finished!\n\n"))

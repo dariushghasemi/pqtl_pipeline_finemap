@@ -1,10 +1,10 @@
 #!/bin/bash
 
 #SBATCH --job-name region_def
-#SBATCH --output %j_region_def.log
+#SBATCH --output %j_region_def_meta.log
 #SBATCH --partition cpuq
 #SBATCH --cpus-per-task 1
-#SBATCH --mem 4G
+#SBATCH --mem 1G
 #SBATCH --time 30-00:00:00
 
 source ~/.bashrc
