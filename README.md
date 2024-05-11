@@ -54,6 +54,38 @@ conda deactivate
 
 - The rule of COJO-ABF fine-mapping was modified properly to work with GWAS results including -LOG10P. The rule gets executed after a successful run of the locus breaker rule in the pipeline. The changes in the development branch need to be merged with the main branch later. Before lunching pipeline, we need to incorporate mapping file in run_COJO rule to tackle the issue related to GWAS results file with alleles in alphabetical order (Wed, 11:50, 01-May-24).
 
-- After screening the results of locus breaker function, it turned out that there are many loci whose width were so lengthy or even equal to zero. Need to check its performance once applied to the meta-analysis and then draw LocusZoom plots (Fri, 17:30, 10-May-24).  
+- The list of proteins in order to test the pipeline (Fri, 14:45, 03-May-24).
+
+```bash
+# take path of instance proteins and list them in config folder of the pipeline 
+find /exchange/healthds/pQTL/results/INTERVAL/*/*/*/results/gwas/*.gz | grep -E '19819.7|12708.91|12730.3|7930.3|7935.26|7943.16|13124.20' > path_list.txt /scratch/.../projects/conf/path_list.txt
+# full list of the proteins for final run
+ls /exchange/healthds/pQTL/results/INTERVAL/chunk_*/chunk_*_output/chunk_*/results/gwas/seq.*.gwas.regenie.gz > /scratch/.../projects/conf/path_list.txt
+```
+
+- Locus breker results were integrated and sent to the PI (20:06, Mon, 06-May-24).
+
+- After screening the results of locus breaker function, it turned out that there are many loci whose width were so lengthy or even equal to zero. Need to check its performance once applied to the meta-analysis and then draw LocusZoom plots (Fri, 17:30, 10-May-24).
+
+## Regional association plot of leading pQTLs
+
+- To use LocusZoom standalone tool v1.4, we needed to convert the genotype file from pgen/pvar/psam to VCF format. We used PLINK v2.00a5LM to do the conversion (Sat, 21:57, 11-May-24).
+
+``` bash
+# convert pgen to bg-zipped vcf
+
+plink2 --pfile /scratch/giulia.pontali/test_snakemake/genomics_QC_pipeline/results/pgen/impute_recoded_selected_sample_filter_hq_var_19 --recode vcf bgz --out interval.imputed.info70.chr22
+
+# create an index file
+tabix -p vcf 
+
+# locusZoom plot
+locuszoom --metal /exchange/healthds/pQTL/results/INTERVAL/chunk_7023/chunk_7023_output/chunk_7023/results/gwas/seq.9832.33.gwas.regenie.gz  markercol ID --epacts-beg-col GENPOS --epacts-end-col GENPOS --epacts-chr-col CHROM --refsnp chr22:44324730  --chr 22  --start  43824730  --end 44824730  --build hg19 --no-ld -plotonly --prefix "11-Mar-24_22_44324730"
+
+# via STDIN
+tabix -h /exchange/healthds/pQTL/results/INTERVAL/chunk_7023/chunk_7023_output/chunk_7023/results/gwas/seq.9832.33.gwas.regenie.gz 22:43824730-44824730 | locuszoom --metal - markercol ID --epacts-beg-col GENPOS --epacts-end-col GENPOS --epacts-chr-col CHROM --refsnp chr22:44324730  --chr 22  --start  43824730  --end 44824730  --build hg19 --no-ld -plotonly --prefix "11-Mar-24_22_44324730"
+
+#--pop EUR --build hg19 --source 1000G_March2012
+```
 
 Dariush
