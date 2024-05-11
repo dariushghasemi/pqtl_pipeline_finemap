@@ -19,20 +19,20 @@ include: "rules/common.smk"
 
 rule all:
     input:
-        expand(ws_path("break/{seqid}/{seqid}_loci.tsv"), seqid=analytes.seqid),
+        expand(ws_path("break/{seqid}_loci.tsv"), seqid=analytes.seqid),
 
 
 rule break_locus:
     input:
         gwas=get_sumstats,
     output:
-        loci=ws_path("break/{seqid}/{seqid}_loci.tsv"),
+        loci=ws_path("break/{seqid}_loci.tsv"),
     conda:
         "envs/r_environment.yml"
     params:
         codes=config.get("path_code"),
         study_id="{seqid}",
-        outdir=ws_path("break/{seqid}/{seqid}"),
+        outdir=ws_path("break/{seqid}"),
         p1=config.get("thresholds").get("p1"),
         p2=config.get("thresholds").get("p2"),
         hole=config.get("thresholds").get("hole"),
@@ -52,28 +52,28 @@ rule break_locus:
             --study_id '{params.study_id}' \
             --p_thresh1 {params.p1} \
             --p_thresh2 {params.p2} \
-            --hole   {params.hole} \
-            --outdir {params.outdir} \
-            --p_label '{params.p_label}' \
-            --chr_label '{params.chr_label}' \
-            --pos_label '{params.pos_label}' 2> {log}
+            --hole      {params.hole} \
+            --outdir    {params.outdir} \
+            --p_label   {params.p_label} \
+            --chr_label {params.chr_label} \
+            --pos_label {params.pos_label} 2> {log}
         """
 
 
 rule run_cojo:
     input:
-        gwas=ss_path("seq.{i}.gwas.regenie.gz"),
-        loci=ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
+        gwas=get_sumstats,
+        loci=ws_path("break/{seqid}_loci.tsv"),
     output:
-        odir=ws_path("output/cojo/seq.{i}/"),
-        log=ws_path("logs/cojo/seq.{i}.log"),
+        odir=ws_path("cojo/{seqid}/"),
+        log=ws_path("logs/cojo/{seqid}.log"),
     params:
         codes=config.get("path_code"),
         geno=config.get("path_geno"),
-        ofile=ws_path("output/cojo/seq.{i}/seq.{i}"),
+        ofile=ws_path("cojo/{seqid}"),
         ppp=config.get("thresholds").get("ppp"),
     log:
-        ws_path("logs/cojo/seq.{i}.log"),
+        ws_path("logs/cojo/{seqid}}.log"),
     resources:
         mem_mb=8000,
         runtime=60,
@@ -84,7 +84,7 @@ rule run_cojo:
             for line in f:
                 chr, beg, end = line.strip().split("\t")[:3]
                 shell(
-                    """
+                """
                 source ~/.bashrc && \
                 conda activate r_finemap &&  \
                 Rscript scripts/s04_cojo_finemapping.R  \

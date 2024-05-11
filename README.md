@@ -50,4 +50,9 @@ conda deactivate
 
 - Locus breaker is incorporated into the pipeline. Time to do so with COJO execution (Sat, 03:45, 27-Apr-24).
 
+- Testing the pipeline on the meta-analysis results modified by GWASLab (Sat, 16:46, 11-May-24).
+```bash
+ls -1 /exchange/healthds/pQTL/results/META_CHRIS_INTERVAL/qced_sumstats/output/seq*/seq*.gwaslab.tsv.gz > conf/path_list_meta.txt
+```
+
 Dariush
