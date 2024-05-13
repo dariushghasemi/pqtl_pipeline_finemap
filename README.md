@@ -118,5 +118,6 @@ tabix chr22.txt.gz 22:43824530-44824930 -h --print-header | locuszoom --metal - 
 
 - A regional association plot for an example locus '22:44324730' associated with 'seq.9832.33' protein was generated using a user-defined local LD in Interval study and save [here](/home/dariush.ghasemi/projects/pqtl_pipeline_finemap/lz_plot/13-Mar-24_ld_user_240513_22_44324730.pdf) (Mon, 19:30, 13-May-24).
 
+- Successfully tested running of cojo after merging with mapping via pipeline on clusters (Tue, 12:50, 14-May-24).
 
 Dariush
