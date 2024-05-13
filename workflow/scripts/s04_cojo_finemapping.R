@@ -42,11 +42,11 @@ pwas_map <- fread(opt$mapping, data.table=F)
 # GWAS input
 dataset_aligned <- fread(opt$dataset_aligned, data.table=F)
 
+# merge map file with GWAS results
 dataset_aligned <- dataset_aligned %>%
-  #dplyr::filter(phenotype_id==opt$phenotype_id)
   select(- TEST, - EXTRA) %>%
   # merge summary stats with map file. Then, SNP id matches with genotype file
-  left_join(head(map_file, 1000), by = c("ID" = "PREVIOUS_ID")) %>%
+  left_join(pwas_map, by = c("ID" = "PREVIOUS_ID")) %>%
   dplyr::mutate(
     snp_map = ID, # workflow needs it to report cojo results
     sdY = coloc:::sdY.est(SE, A1FREQ, N),
