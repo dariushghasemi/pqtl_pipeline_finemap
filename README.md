@@ -73,19 +73,50 @@ ls /exchange/healthds/pQTL/results/INTERVAL/chunk_*/chunk_*_output/chunk_*/resul
 
 ``` bash
 # convert pgen to bg-zipped vcf
-
 plink2 --pfile /scratch/giulia.pontali/test_snakemake/genomics_QC_pipeline/results/pgen/impute_recoded_selected_sample_filter_hq_var_19 --recode vcf bgz --out interval.imputed.info70.chr22
 
 # create an index file
 tabix -p vcf 
 
-# locusZoom plot
-locuszoom --metal /exchange/healthds/pQTL/results/INTERVAL/chunk_7023/chunk_7023_output/chunk_7023/results/gwas/seq.9832.33.gwas.regenie.gz  markercol ID --epacts-beg-col GENPOS --epacts-end-col GENPOS --epacts-chr-col CHROM --refsnp chr22:44324730  --chr 22  --start  43824730  --end 44824730  --build hg19 --no-ld -plotonly --prefix "11-Mar-24_22_44324730"
+# modify the summary results for locuszoom
+zcat seq.9832.33.gwas.regenie.gz | head -1 > my_header.txt
+tabix seq.9832.33.gwas.regenie.gz 22:44324530-44324930 | sed -E 's/([0-9]+:[0-9]+):([A-Z]):([A-Z])/\1_\2\/\3/g' > my_region.txt
 
-# via STDIN
-tabix -h /exchange/healthds/pQTL/results/INTERVAL/chunk_7023/chunk_7023_output/chunk_7023/results/gwas/seq.9832.33.gwas.regenie.gz 22:43824730-44824730 | locuszoom --metal - markercol ID --epacts-beg-col GENPOS --epacts-end-col GENPOS --epacts-chr-col CHROM --refsnp chr22:44324730  --chr 22  --start  43824730  --end 44824730  --build hg19 --no-ld -plotonly --prefix "11-Mar-24_22_44324730"
+# all together
+cat my_header.txt > chr22.txt && cat my_region.txt >> chr22.txt && cat chr22.txt | bgzip > chr22.txt.gz && tabix chr22.txt.gz -s1 -b2 -e2 -f
 
-#--pop EUR --build hg19 --source 1000G_March2012
+# subset vcf
+bcftools view interval.imputed.info70.chr22.vcf.gz  -r 22:44324530-44324930 -Oz -o interval.imputed.info70.chr22.cut.vcf.gz
+
+# subset vcf via tabix
+tabix -p vcf interval.imputed.info70.chr22.vcf.gz 22:43824730-44824730 --print-header | sed -E 's/([0-9]+:[0-9]+):([A-Z]):([A-Z])/\1_\2\/\3/g' | bgzip > interval.imputed.info70.chr22.cut.aligned.vcf.gz
+
+tabix -p vcf interval.imputed.info70.chr22.cut.aligned.vcf.gz
+
+# change colon with underscore in vcf file 22:44324530-44324930
+#bcftools view interval.imputed.info70.chr22.cut.vcf.gz | sed -E 's/([0-9]+:[0-9]+):([A-Z]):([A-Z])/\1_\2\/\3/g' | bgzip > interval.imputed.info70.chr22.cut.aligned.vcf.gz
+
+# save snps list in vcf file
+tabix interval.imputed.info70.chr22.cut.aligned.vcf.gz 22:43824730-44824730 | cut -f3 > snp.list
+
+# compute ld
+plink --vcf interval.imputed.info70.chr22.cut.aligned.vcf.gz       --ld-snp-list snp.list        --ld-window 10000    --ld-window-kb 250    --r2 dprime        --ld-window-r2 0        --out ld_region
+
+# compute ld with lead variant
+plink --vcf interval.imputed.info70.chr22.cut.aligned.vcf.gz       --ld-snp 22:44324730_T/C      --ld-window 10000        --ld-window-kb 500        --r2 dprime        --ld-window-r2 0        --out ld_region
+
+# reform ld file for LZ
+cat ld_region.ld | awk '{OFS="\t"; {print $3, $6, $8, $7}}' | sed -e '1s/SNP_A/snp1/' -e '1s/SNP_B/snp2/' -e '1s/DP/dprime/' -e '1s/R2/rsquare/' > my_ld.txt
+
+# locuszoom with LD from VCF
+tabix chr22.txt.gz 22:44324530-44324930 -h --print-header | locuszoom --metal - --markercol ID --pvalcol LOG10P --no-transform --refsnp 22:44324730  --flank 200  --build hg19 --ld-vcf interval.imputed.info70.chr22.cut.aligned.vcf.gz  --plotonly --prefix "13-Mar-24_ld_vcf"
+
+# locuszoom with precalculated LD and via STDIN *** working ***
+tabix chr22.txt.gz 22:43824530-44824930 -h --print-header | locuszoom --metal - --markercol ID --pvalcol LOG10P --no-transform --refsnp 22:44324730  --flank 250kbp  --build hg19 --ld my_ld.txt  --ld-measure rsquare --plotonly --prefix "13-Mar-24_ld_user"
+
 ```
+
+- A regional association plot for an example locus '22:44324730' associated with 'seq.9832.33' protein was generated using a user-defined local LD in Interval study and save [here](/home/dariush.ghasemi/projects/pqtl_pipeline_finemap/lz_plot/13-Mar-24_ld_user_240513_22_44324730.pdf) (Mon, 19:30, 13-May-24).
+
 
 Dariush
