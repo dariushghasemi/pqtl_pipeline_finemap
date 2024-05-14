@@ -72,6 +72,7 @@ rule run_cojo:
     params:
         codes = config.get("path_code"),
         geno  = config.get("path_geno"),
+        mapping = config.get("path_mapping"),
         ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
         ppp   = config.get('thresholds').get('ppp'),
         p3    = config.get('thresholds').get('p3'),
@@ -93,6 +94,7 @@ rule run_cojo:
                 Rscript scripts/s04_cojo_finemapping.R  \
                 --pipeline_path   {params.codes}  \
                 --dataset_aligned {input.gwas}  \
+                --mapping  {params.mapping}  \
                 --study_id {params.ofile}  \
                 --chr   {chr}  \
                 --start {beg}  \
