@@ -56,7 +56,7 @@ rule break_locus:
             --outdir    {params.outdir} \
             --p_label   {params.p_label} \
             --chr_label {params.chr_label} \
-            --pos_label {params.pos_label} 2> {log}
+            --pos_label {params.pos_label} > {log}
         """
 
 
@@ -93,7 +93,7 @@ rule run_cojo:
 
             # Skip the first line then run the script
             if [[ "$chr" != "chr" ]]; then
-                Rscript scripts/s04_cojo_finemapping.R  \
+                Rscript workflow/scripts/s04_cojo_finemapping.R  \
                 --pipeline_path   {params.codes}  \
                 --dataset_aligned {input.gwas}  \
                 --study_id {params.ofile}  \
@@ -104,7 +104,7 @@ rule run_cojo:
                 --cs_thresh {params.ppp}  \
                 --outdir {output.odir} \
                 --phenotype_id full  \
-                --nf_hcoloc_v no_nf  2>> {log}
+                --nf_hcoloc_v no_nf  > {log}
             fi
         done < "$INPUT_FILE"
         """
