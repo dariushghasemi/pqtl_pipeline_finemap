@@ -62,7 +62,7 @@ cat("done.")
 # Perform cojo
 ###############
 
-cat(paste0("\nRun COJO..."))
+cat(paste0("\nRun COJO...\n\n"))
 # Break dataframe in list of single rows
 conditional.dataset <- cojo.ht(
   D=dataset_aligned,

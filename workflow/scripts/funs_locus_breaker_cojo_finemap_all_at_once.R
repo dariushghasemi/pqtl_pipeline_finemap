@@ -406,21 +406,22 @@ cojo.ht=function(D=dataset_aligned
                 , locus_start=opt$start
                 , locus_end=opt$end
                 , p.thresh=1e-4
-                , plink.bin="/ssu/gassu/software/plink/2.00_20211217/plink2"
+                , plink.bin= ""
                 , gcta.bin="/ssu/gassu/software/GCTA/1.94.0beta/gcta64"
                 , bfile="/processing_data/shared_datasets/ukbiobank/genotypes/LD_reference/p01_output/ukbb_all_30000_random_unrelated_white_british"
                 , maf.thresh=1e-4){
 
   random.number=stri_rand_strings(n=1, length=20, pattern = "[A-Za-z0-9]")
-
+#"/ssu/gassu/software/plink/2.00_20211217/plink2"
 ### Produce two snp.lists: 1) all SNPs to compute allele frequency, 2) only snps included in the locus
     write(D$SNP, ncol=1,file=paste0(random.number,".snp.list"))
     write(D %>% filter(CHROM==locus_chr, GENPOS >= locus_start, GENPOS <= locus_end) %>% pull(SNP), ncol=1,file=paste0(random.number,"_locus_only.snp.list"))
 
 # Compute allele frequency with Plink
-    system(paste0(plink.bin," --bfile ",bfile, locus_chr, " --extract ",random.number,".snp.list --maf ", maf.thresh, " --make-bed --geno-counts --out ",random.number))
+    system(paste0(plink.bin," --bfile ",bfile, locus_chr, " --extract ",random.number,".snp.list --maf ", maf.thresh, " --make-bed --geno-counts --threads 32 --memory 289930 'require'  --out ", random.number))
     freqs <- fread(paste0(random.number,".gcount"))
     freqs$FreqREF=(freqs$HOM_REF_CT*2+freqs$HET_REF_ALT_CTS)/(2*(rowSums(freqs[,c("HOM_REF_CT", "HET_REF_ALT_CTS", "TWO_ALT_GENO_CTS")])))  #### Why doing all this when plink can directly calculate it with --frq?
+    cat("\n\nplink extracted genotypes - done!\n")
 
 # Assign allele frequency from the LD reference
     D <- D %>%
@@ -428,6 +429,7 @@ cojo.ht=function(D=dataset_aligned
       mutate(FREQ=ifelse(REF==ALLELE0, FreqREF, (1-FreqREF))) %>%
       dplyr::select("SNP","ALLELE0","ALLELE1","FREQ","BETA","SE","LOG10P","N", any_of(c("snp_map","type","sdY","s")))
   fwrite(D,file=paste0(random.number,"_sum.txt"), row.names=F,quote=F,sep="\t", na=NA)
+  cat("\n\nMerge with LD reference...done.\n\n")
 
 # step1 determine independent snps
   system(paste0(gcta.bin," --bfile ", random.number, " --cojo-p ", p.thresh, " --maf ", maf.thresh, " --extract ", random.number, "_locus_only.snp.list --cojo-file ", random.number, "_sum.txt --cojo-slct --out ", random.number, "_step1"))
