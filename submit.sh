@@ -30,5 +30,4 @@ case $(hostname) in
 esac
 
 # run the pipeline
-conda activate /exchange/healthds/software/envs/snakemake
 make run

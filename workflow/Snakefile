@@ -19,14 +19,14 @@ include: "rules/common.smk"
 
 rule all:
     input:
-        expand(ws_path("break/{seqid}_loci.tsv"), seqid=analytes.seqid),
+        expand(ws_path("logs/cojo/{seqid}.log"), seqid=analytes.seqid),
 
 
 rule break_locus:
     input:
         gwas=get_sumstats,
     output:
-        loci=ws_path("break/{seqid}_loci.tsv"),
+        loci=ws_path("break/{seqid}_loci.csv"),
     conda:
         "envs/r_environment.yml"
     params:
@@ -63,7 +63,7 @@ rule break_locus:
 rule run_cojo:
     input:
         gwas=get_sumstats,
-        loci=ws_path("break/{seqid}_loci.tsv"),
+        loci=ws_path("break/{seqid}_loci.csv"),
     output:
         odir=ws_path("cojo/{seqid}/"),
         log=ws_path("logs/cojo/{seqid}.log"),
@@ -77,27 +77,32 @@ rule run_cojo:
     resources:
         mem_mb=8000,
         runtime=60,
-    run:
-        # read the loci and loop over each locus
-        with open(input.loci) as f:
-            next(f)  # Skip the header row
-            for line in f:
-                chr, beg, end = line.strip().split("\t")[:3]
-                shell(
-                """
-                source ~/.bashrc && \
-                conda activate r_finemap &&  \
+    shell:
+        """
+        Rscript=`ls /conda-envs/*/bin/Rscript`;
+        INPUT_FILE={input.loci};
+
+        # read loci and loop over each locus
+        while IFS=, read -r col1 col2 col3 col4_onwards; do
+            # Assign the values of the first three columns to variables
+            chr=$col1
+            beg=$col2
+            end=$col3
+
+            # Skip the first line then run the script
+            if [[ "$chr" != "chr" ]]; then
                 Rscript scripts/s04_cojo_finemapping.R  \
                 --pipeline_path   {params.codes}  \
                 --dataset_aligned {input.gwas}  \
                 --study_id {params.ofile}  \
-                --chr   {chr}  \
-                --start {beg}  \
-                --end   {end}  \
+                --chr   "$chr"  \
+                --start "$beg"  \
+                --end   "$end"  \
                 --bfile {params.geno} \
                 --cs_thresh {params.ppp}  \
                 --outdir {output.odir} \
                 --phenotype_id full  \
                 --nf_hcoloc_v no_nf  2>> {log}
-                """
-                )
+            fi
+        done < "$INPUT_FILE"
+        """

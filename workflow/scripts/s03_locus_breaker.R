@@ -51,7 +51,7 @@ check_signif <- function(x){
     p.sig     = -log10(opt$p_thresh1),
     p.limit   = -log10(opt$p_thresh2),
     hole.size = opt$hole,
-    p.label   = opt$p_label,  
+    p.label   = opt$p_label,
     chr.label = opt$chr_label,
     pos.label = opt$pos_label
   )
@@ -68,7 +68,7 @@ cat(paste0("done!\n\nSaving index variants..."))
 ### Add study ID to the loci table. Save
 loci_list$study_id <- opt$study_id
 
-fwrite(loci_list, paste0(opt$outdir, "_loci.tsv"), sep="\t", quote=F, na=NA)
+fwrite(loci_list, paste0(opt$outdir, "_loci.tsv"), sep=",", quote=F, na=NA)
 cat(paste0("done!\n"))
 
 cat(paste0("\n", nrow(loci_list), " significant loci identified for ", opt$study_id, "\n"))
