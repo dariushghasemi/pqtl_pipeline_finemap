@@ -68,7 +68,7 @@ cat(paste0("done!\n\nSaving index variants..."))
 ### Add study ID to the loci table. Save
 loci_list$study_id <- opt$study_id
 
-fwrite(loci_list, paste0(opt$outdir, "_loci.tsv"), sep=",", quote=F, na=NA)
+fwrite(loci_list, paste0(opt$outdir, "_loci.csv"), sep=",", quote=F, na=NA)
 cat(paste0("done!\n"))
 
 cat(paste0("\n", nrow(loci_list), " significant loci identified for ", opt$study_id, "\n"))
