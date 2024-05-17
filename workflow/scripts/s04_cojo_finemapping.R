@@ -9,6 +9,7 @@ option_list <- list(
   make_option("--end", default=NULL, help="Locus ending position"),
   make_option("--phenotype_id", default=NULL, help="Trait for which the locus boundaries have been identified - relevant in cases of molQTLs"),
   make_option("--dataset_aligned", default=NULL, help="GENOME-WIDE munged and aligned dataset file"),
+  make_option("--mapping", default=NULL, help="Mapping file containing variants IDs matching with genotype bfile"),
   make_option("--p_thresh3", default=1e-04, help="Noise p-values threshold for COJO"),
   make_option("--maf", default=1e-04, help="MAF filter", metavar="character"),
   make_option("--bfile", default=NULL, help="Path and prefix name of custom LD bfiles (PLINK format .bed .bim .fam)"),
@@ -33,22 +34,35 @@ opt$chr    <- as.numeric(opt$chr)
 opt$start  <- as.numeric(opt$start) -100000
 opt$end    <- as.numeric(opt$end) + 100000
 
-cat(paste("\nlocus is:", locus_name, "\n"))
+cat(paste("\nlocus is:", locus_name))
 
 # GWAS input
 dataset_aligned <- fread(opt$dataset_aligned, data.table=F) #%>% dplyr::filter(phenotype_id==opt$phenotype_id)
 
-# flip alleles in the summary stats to allow matching SNP id with the genotype file
-dataset_aligned <- dataset_aligned %>% mutate(
-    SNP = stringr::str_c(CHROM, GENPOS, ALLELE1, ALLELE0, sep = ":"),
-  )
+# Mapping file
+pwas_map <- fread(opt$mapping, data.table=F)
 
-cat("\nAlleles in the GWAS summary file were flipped!\n")
+cat("\nAdding original alleles from mapping to GWAS summary...")
+# merge map file with GWAS results
+dataset_aligned <- dataset_aligned %>%
+  select(- TEST, - EXTRA) %>%
+  # merge summary stats with map file. Then, SNP id matches with genotype file
+  left_join(pwas_map, by = c("ID" = "PREVIOUS_ID")) %>%
+  dplyr::mutate(
+    snp_map = ID, # workflow needs it to report cojo results
+    sdY = coloc:::sdY.est(SE, A1FREQ, N),
+    type = paste0('quant')
+  ) %>%
+  rename(SNP = ID) #to be used by COJO to merge with genotype
+
+
+cat("done.")
 
 ###############
 # Perform cojo
 ###############
 
+cat(paste0("\nRun COJO...\n\n"))
 # Break dataframe in list of single rows
 conditional.dataset <- cojo.ht(
   D=dataset_aligned,
@@ -63,7 +77,7 @@ conditional.dataset <- cojo.ht(
 )
 
 #saveRDS(conditional.dataset, file=paste0("condition_data_chr15.rds"))
-cat(paste0("\nCOJO is done! Time to draw a chart ...\n\n"))
+cat(paste0("done.\nTime to draw regional association plot..."))
 
 # Plot conditioned GWAS sum stats
 dir.create(paste0(opt$outdir), recursive = TRUE)
@@ -72,25 +86,26 @@ png(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.png"), res
 plot.cojo.ht(conditional.dataset) + patchwork::plot_annotation(paste("Locus chr", locus_name))
 dev.off()
 
-cat("\nPlot created!\n")
+cat("created!")
 
 ####################
 # Locus breaker BIS
 ###################
 
+cat(paste0("\nApply locus breaker and widen the locus..."))
 ### Repeat only on dataset that have been conditioned!!
 conditional.dataset$results <- lapply(conditional.dataset$results, function(x){
 
   ### Check if there's any SNP at p-value lower than the set threshold. Otherwise stop here
-  if(isTRUE(any(x %>% pull(LOG10P) > -log10(opt$p_thresh4)))){
-    new_bounds <- locus.breaker(
+  if(isTRUE(any(x %>% pull(pC) > -log10(opt$p_thresh4)))){
+    new_bounds <- locus.breaker.p(
       x,
-      p.sig    = as.numeric(-log10(opt$p_thresh4)),
-      p.limit  = as.numeric(-log10(opt$p_thresh3)),
+      p.sig    = as.numeric(opt$p_thresh4),
+      p.limit  = as.numeric(opt$p_thresh3),
       hole.size= opt$hole,
-      p.label  = "LOG10P",
-      chr.label= "CHROM",
-      pos.label= "GENPOS")
+      p.label  = "pC",
+      chr.label= "Chr",
+      pos.label= "bp")
 
     # Slightly enlarge locus by 200kb!
     new_bounds <- new_bounds %>% dplyr::mutate(start=as.numeric(start)-100000, end=as.numeric(end)+100000)
@@ -100,33 +115,38 @@ conditional.dataset$results <- lapply(conditional.dataset$results, function(x){
   }
 })
 
-cat("\nApply locus breaker and widen the locus!\n")
+cat(paste0("done."))
+
 ## Remove eventually empty dataframes (caused by p_thresh4 filter)
 conditional.dataset$results <- conditional.dataset$results %>% discard(is.null)
 
 #saveRDS(conditional.dataset, file=paste0("condition_data_chr15_up", ".rds"))
 
-cat("\nBegin to fine map!\n")
+
 
 #############
 # Finemapping
 #############
 
+cat("\nBegin to fine-map the locus...")
 # Perform finemapping of each conditional dataset
 finemap.res <- lapply(conditional.dataset$results, function(x){
   finemap.cojo(x, cs_threshold=opt$cs_thresh)
 })
 
-cat("\nFine-mapping finished!\n")
+cat(paste0("done."))
+
 #########################################
 # Organise list of what needs to be saved
 #########################################
 
+cat("\nSaving independent signals...")
 ## Save independent association signals
 core_file_name <- paste0(opt$study_id, "_", opt$phenotype_id)
 if(opt$phenotype_id=="full") { core_file_name <- gsub("_full", "", core_file_name)}
 fwrite(conditional.dataset$ind.snps, paste0(core_file_name, "_locus_chr", locus_name,"_ind_snps.tsv"), sep="\t", quote=F, na=NA)
 
+cat("done.\nSave other lABF results...")
 ## Save lABF of each conditional dataset
 lapply(finemap.res, function(x){
   sp_file_name <- paste0(core_file_name, "_", unique(x$cojo_snp), "_locus_chr", locus_name)
@@ -147,4 +167,5 @@ lapply(finemap.res, function(x){
          sep="\t", quote=F, col.names = F, na=NA)
 })
 
-cat("\nOutputs saved!\n")
+cat("done!\n\n")
+cat("Run-COJO rule is finished!\n")

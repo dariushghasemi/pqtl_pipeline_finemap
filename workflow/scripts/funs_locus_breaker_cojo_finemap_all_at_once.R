@@ -406,28 +406,30 @@ cojo.ht=function(D=dataset_aligned
                 , locus_start=opt$start
                 , locus_end=opt$end
                 , p.thresh=1e-4
-                , plink.bin="/ssu/gassu/software/plink/2.00_20211217/plink2"
+                , plink.bin= ""
                 , gcta.bin="/ssu/gassu/software/GCTA/1.94.0beta/gcta64"
                 , bfile="/processing_data/shared_datasets/ukbiobank/genotypes/LD_reference/p01_output/ukbb_all_30000_random_unrelated_white_british"
                 , maf.thresh=1e-4){
 
   random.number=stri_rand_strings(n=1, length=20, pattern = "[A-Za-z0-9]")
-
+#"/ssu/gassu/software/plink/2.00_20211217/plink2"
 ### Produce two snp.lists: 1) all SNPs to compute allele frequency, 2) only snps included in the locus
     write(D$SNP, ncol=1,file=paste0(random.number,".snp.list"))
-    write(D %>% filter(CHR==locus_chr, BP >= locus_start, BP <= locus_end) %>% pull(SNP), ncol=1,file=paste0(random.number,"_locus_only.snp.list"))
+    write(D %>% filter(CHROM==locus_chr, GENPOS >= locus_start, GENPOS <= locus_end) %>% pull(SNP), ncol=1,file=paste0(random.number,"_locus_only.snp.list"))
 
 # Compute allele frequency with Plink
-    system(paste0(plink.bin," --bfile ",bfile, locus_chr, " --extract ",random.number,".snp.list --maf ", maf.thresh, " --make-bed --geno-counts --out ",random.number))
+    system(paste0(plink.bin," --bfile ",bfile, locus_chr, " --extract ",random.number,".snp.list --maf ", maf.thresh, " --make-bed --geno-counts --threads 32 --memory 289930 'require'  --out ", random.number))
     freqs <- fread(paste0(random.number,".gcount"))
     freqs$FreqREF=(freqs$HOM_REF_CT*2+freqs$HET_REF_ALT_CTS)/(2*(rowSums(freqs[,c("HOM_REF_CT", "HET_REF_ALT_CTS", "TWO_ALT_GENO_CTS")])))  #### Why doing all this when plink can directly calculate it with --frq?
+    cat("\n\nplink extracted genotypes - done!\n")
 
 # Assign allele frequency from the LD reference
     D <- D %>%
       left_join(freqs %>% dplyr::select(ID,FreqREF,REF), by=c("SNP"="ID")) %>%
-      mutate(FREQ=ifelse(REF==A1, FreqREF, (1-FreqREF))) %>%
-      dplyr::select("SNP","A1","A2","FREQ","b","se","p","N","snp_map","type", any_of(c("sdY","s")))
+      mutate(FREQ=ifelse(REF==ALLELE0, FreqREF, (1-FreqREF))) %>%
+      dplyr::select("SNP","ALLELE0","ALLELE1","FREQ","BETA","SE","LOG10P","N", any_of(c("snp_map","type","sdY","s")))
   fwrite(D,file=paste0(random.number,"_sum.txt"), row.names=F,quote=F,sep="\t", na=NA)
+  cat("\n\nMerge with LD reference...done.\n\n")
 
 # step1 determine independent snps
   system(paste0(gcta.bin," --bfile ", random.number, " --cojo-p ", p.thresh, " --maf ", maf.thresh, " --extract ", random.number, "_locus_only.snp.list --cojo-file ", random.number, "_sum.txt --cojo-slct --out ", random.number, "_step1"))
@@ -435,7 +437,7 @@ cojo.ht=function(D=dataset_aligned
   if(file.exists(paste0(random.number,"_step1.jma.cojo"))){
     dataset.list=list()
     ind.snp=fread(paste0(random.number,"_step1.jma.cojo")) %>%
-      left_join(D %>% dplyr::select(SNP,snp_map,type,any_of(c("sdY", "s"))), by="SNP")
+      left_join(D %>% dplyr::select(SNP,any_of(c("snp_map","type","sdY", "s"))), by="SNP")
 
     dataset.list$ind.snps <- data.frame(matrix(ncol = ncol(ind.snp), nrow = 0))
     colnames(dataset.list$ind.snps) <- colnames(ind.snp)
@@ -455,7 +457,7 @@ cojo.ht=function(D=dataset_aligned
         } else {
           # Re-add type and sdY/s info, and map SNPs!
           step2.res <- fread(paste0(random.number, "_step2.cma.cojo"), data.table=FALSE) %>%
-            left_join(D %>% dplyr::select(SNP,snp_map,type,any_of(c("sdY", "s"))), by="SNP") %>%
+            left_join(D %>% dplyr::select(SNP, any_of(c("snp_map","type","sdY", "s"))), by="SNP") %>%
             dplyr::mutate(cojo_snp=ind.snp$SNP[i])
           # Add SNPs to the ind.snps dataframe
           dataset.list$ind.snps <- rbind(dataset.list$ind.snps, ind.snp[i,])
@@ -473,7 +475,7 @@ cojo.ht=function(D=dataset_aligned
       system(paste0(gcta.bin," --bfile ",random.number," --cojo-p ",p.thresh, " --maf ", maf.thresh, " --extract ",random.number,"_locus_only.snp.list --cojo-file ",random.number,"_sum.txt --cojo-cond ",random.number,"_independent.snp --out ",random.number,"_step2"))
 
       step2.res <- fread(paste0(random.number, "_step2.cma.cojo"), data.table=FALSE) %>%
-        left_join(D %>% dplyr::select(SNP,snp_map,A1,type,any_of(c("sdY", "s"))), by=c("SNP", "refA"="A1"))
+        left_join(D %>% dplyr::select(SNP,ALLELE0, any_of(c("snp_map","type", "sdY", "s"))), by=c("SNP", "refA"="ALLELE0"))
 
       #### Add back top SNP, removed from the data frame with the conditioning step
       step2.res <- rbind.fill(
@@ -511,7 +513,8 @@ finemap.cojo <- function(D, cs_threshold=0.99){
 
   D <- as.list(na.omit(D)) ### move to list and keep unique value of "type" otherwise ANNOYING ERROR!
   D$type <- unique(D$type)
-  if(D$type=="cc"){D$s <- unique(D$s)}else{D$sdY <- unique(D$sdY)}
+  #if(D$type=="cc"){D$s <- unique(D$s)}else{D$sdY <- unique(D$sdY)}
+  D$sdY <- unique(D$sdY)
 
 # Finemap
   fine.res <- coloc::finemap.abf(D) %>%
@@ -533,6 +536,14 @@ finemap.cojo <- function(D, cs_threshold=0.99){
 }
 
 
+my_theme <- function(...){
+  theme(
+  legend.position = c(.15, .95),
+  axis.title.x = element_blank(),
+  axis.title = element_text(size = 14, face = 2),
+  axis.text =  element_text(size = 12, face = 2)
+  )
+}
 
 ### plot.cojo.ht ###
 plot.cojo.ht=function(cojo.ht.obj){
@@ -549,14 +560,14 @@ plot.cojo.ht=function(cojo.ht.obj){
 
     p1 <- ggplot(cojo.ht.obj$results[[i]], aes(x=bp,y=-log10(p))) +
       geom_point(alpha=0.6,size=3)+
-      theme_minimal()+
+      theme_classic() + my_theme() +
       geom_point(data=cojo.ht.obj$ind.snps,aes(x=bp,y=-log10(p),fill=snp_map),size=6,shape=23) +
       guides(fill=guide_legend(title="SNP"))
 
     p2 <- ggplot(whole.dataset,aes(x=bp,y=-log10(pC),color=signal)) +
       facet_grid(signal~.) +
       geom_point(alpha=0.8,size=3) +
-      theme_minimal() +
+      theme_classic() + my_theme() +
       ggtitle("Conditioned results")
 
     p3 <- p1/p2 + plot_layout(heights = c(1, nrow(cojo.ht.obj$ind.snps)+0.2))
@@ -565,7 +576,7 @@ plot.cojo.ht=function(cojo.ht.obj){
 
     p3 <- ggplot(cojo.ht.obj$results[[1]], aes(x=bp,y=-log10(p))) +
       geom_point(alpha=0.6,size=3)+
-      theme_minimal()+
+      theme_classic() + my_theme() +
       geom_point(data=cojo.ht.obj$ind.snps,aes(x=bp,y=-log10(p),fill=snp_map),size=6,shape=23)
   }
   (p3)
