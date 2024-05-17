@@ -75,7 +75,7 @@ rule run_cojo:
         ofile=ws_path("cojo/{seqid}"),
         ppp=config.get("thresholds").get("ppp"),
     log:
-        ws_path("logs/cojo/{seqid}}.log"),
+        ws_path("logs/cojo/{seqid}.log"),
     resources:
         mem_mb=8000,
         runtime=60,
