@@ -67,6 +67,8 @@ rule run_cojo:
     output:
         odir=ws_path("cojo/{seqid}/"),
         log=ws_path("logs/cojo/{seqid}.log"),
+    conda:
+        "envs/r_environment.yml"
     params:
         codes=config.get("path_code"),
         geno=config.get("path_geno"),

@@ -1,7 +1,7 @@
 TARGETS=dependencies dag run unlock
 
 CONDA_ENV_DIR=$(shell dirname ${CONDA_EXE})
-CONDA_ENV_NAME=snakemake #/exchange/healthds/software/envs/snakemake
+CONDA_ENV_NAME=/exchange/healthds/software/envs/snakemake
 
 all:
 	@echo "Try one of: ${TARGETS}"
