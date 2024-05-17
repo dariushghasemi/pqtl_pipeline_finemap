@@ -40,7 +40,7 @@ dataset_aligned <- fread(opt$dataset_aligned, data.table=F) #%>% dplyr::filter(p
 
 # flip alleles in the summary stats to allow matching SNP id with the genotype file
 dataset_aligned <- dataset_aligned %>% mutate(
-    SNP = stringr::str_c(CHROM, GENPOS, ALLELE1, ALLELE0, sep = ":"),
+    SNP = stringr::str_c(CHR, POS, EA, NEA, sep = ":"),
   )
 
 cat("\nAlleles in the GWAS summary file were flipped!\n")
@@ -88,9 +88,9 @@ conditional.dataset$results <- lapply(conditional.dataset$results, function(x){
       p.sig    = as.numeric(-log10(opt$p_thresh4)),
       p.limit  = as.numeric(-log10(opt$p_thresh3)),
       hole.size= opt$hole,
-      p.label  = "LOG10P",
-      chr.label= "CHROM",
-      pos.label= "GENPOS")
+      p.label  = "MLOG10P",
+      chr.label= "CHR",
+      pos.label= "POS")
 
     # Slightly enlarge locus by 200kb!
     new_bounds <- new_bounds %>% dplyr::mutate(start=as.numeric(start)-100000, end=as.numeric(end)+100000)
