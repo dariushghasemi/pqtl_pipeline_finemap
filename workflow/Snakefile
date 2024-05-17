@@ -73,7 +73,11 @@ rule run_cojo:
         codes=config.get("path_code"),
         geno=config.get("path_geno"),
         ofile=ws_path("cojo/{seqid}"),
+        mapping=config.get("path_mapping"),
         ppp=config.get("thresholds").get("ppp"),
+        p3=config.get("thresholds").get("p3"),
+        p4=config.get("thresholds").get("p4"),
+        maf=config.get("thresholds").get("maf"),
     log:
         ws_path("logs/cojo/{seqid}.log"),
     resources:
@@ -96,12 +100,16 @@ rule run_cojo:
                 Rscript workflow/scripts/s04_cojo_finemapping.R  \
                 --pipeline_path   {params.codes}  \
                 --dataset_aligned {input.gwas}  \
+                --mapping  {params.mapping}  \
                 --study_id {params.ofile}  \
                 --chr   "$chr"  \
                 --start "$beg"  \
                 --end   "$end"  \
                 --bfile {params.geno} \
                 --cs_thresh {params.ppp}  \
+                --p_thresh3 {params.p3}  \
+                --p_thresh4 {params.p4}  \
+                --maf       {params.maf}  \
                 --outdir {output.odir} \
                 --phenotype_id full  \
                 --nf_hcoloc_v no_nf  > {log}
