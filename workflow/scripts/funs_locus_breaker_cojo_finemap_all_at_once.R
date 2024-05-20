@@ -406,7 +406,7 @@ cojo.ht=function(D=dataset_aligned
                 , locus_start=opt$start
                 , locus_end=opt$end
                 , p.thresh=1e-4
-                , plink.bin= ""
+                , plink.bin= "/ssu/gassu/software/plink/2.00_20211217/plink2"
                 , gcta.bin="/ssu/gassu/software/GCTA/1.94.0beta/gcta64"
                 , bfile="/processing_data/shared_datasets/ukbiobank/genotypes/LD_reference/p01_output/ukbb_all_30000_random_unrelated_white_british"
                 , maf.thresh=1e-4){

@@ -1,6 +1,5 @@
 # import required libraries
 from snakemake.utils import min_version
-from pathlib import Path
 
 
 ##### set minimum snakemake version #####
@@ -19,14 +18,14 @@ include: "rules/common.smk"
 
 rule all:
     input:
-        expand(ws_path("break/{seqid}_loci.tsv"), seqid=analytes.seqid),
+        expand(ws_path("logs/cojo/{seqid}.log"), seqid=analytes.seqid),
 
 
 rule break_locus:
     input:
         gwas=get_sumstats,
     output:
-        loci=ws_path("break/{seqid}_loci.tsv"),
+        loci=ws_path("break/{seqid}_loci.csv"),
     conda:
         "envs/r_environment.yml"
     params:
@@ -56,48 +55,62 @@ rule break_locus:
             --outdir    {params.outdir} \
             --p_label   {params.p_label} \
             --chr_label {params.chr_label} \
-            --pos_label {params.pos_label} 2> {log}
+            --pos_label {params.pos_label} > {log}
         """
 
 
 rule run_cojo:
     input:
         gwas=get_sumstats,
-        loci=ws_path("break/{seqid}_loci.tsv"),
+        loci=ws_path("break/{seqid}_loci.csv"),
     output:
         odir=ws_path("cojo/{seqid}/"),
         log=ws_path("logs/cojo/{seqid}.log"),
+    conda:
+        "envs/r_environment.yml"
     params:
         codes=config.get("path_code"),
         geno=config.get("path_geno"),
         ofile=ws_path("cojo/{seqid}"),
+        mapping=config.get("path_mapping"),
         ppp=config.get("thresholds").get("ppp"),
+        p3=config.get("thresholds").get("p3"),
+        p4=config.get("thresholds").get("p4"),
+        maf=config.get("thresholds").get("maf"),
     log:
-        ws_path("logs/cojo/{seqid}}.log"),
+        ws_path("logs/cojo/{seqid}.log"),
     resources:
-        mem_mb=8000,
-        runtime=60,
-    run:
-        # read the loci and loop over each locus
-        with open(input.loci) as f:
-            next(f)  # Skip the header row
-            for line in f:
-                chr, beg, end = line.strip().split("\t")[:3]
-                shell(
-                """
-                source ~/.bashrc && \
-                conda activate r_finemap &&  \
-                Rscript scripts/s04_cojo_finemapping.R  \
+        runtime=lambda wc, attempt: attempt * 60,
+    shell:
+        """
+        Rscript=`ls /conda-envs/*/bin/Rscript`;
+        INPUT_FILE={input.loci};
+
+        # read loci and loop over each locus
+        while IFS=, read -r col1 col2 col3 col4_onwards; do
+            # Assign the values of the first three columns to variables
+            chr=$col1
+            beg=$col2
+            end=$col3
+
+            # Skip the first line then run the script
+            if [[ "$chr" != "chr" ]]; then
+                Rscript workflow/scripts/s04_cojo_finemapping.R  \
                 --pipeline_path   {params.codes}  \
                 --dataset_aligned {input.gwas}  \
+                --mapping  {params.mapping}  \
                 --study_id {params.ofile}  \
-                --chr   {chr}  \
-                --start {beg}  \
-                --end   {end}  \
+                --chr   "$chr"  \
+                --start "$beg"  \
+                --end   "$end"  \
                 --bfile {params.geno} \
                 --cs_thresh {params.ppp}  \
+                --p_thresh3 {params.p3}  \
+                --p_thresh4 {params.p4}  \
+                --maf       {params.maf}  \
                 --outdir {output.odir} \
                 --phenotype_id full  \
-                --nf_hcoloc_v no_nf  2>> {log}
-                """
-                )
+                --nf_hcoloc_v no_nf  > {log}
+            fi
+        done < "$INPUT_FILE"
+        """

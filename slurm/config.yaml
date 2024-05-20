@@ -27,3 +27,5 @@ default-resources:
 set-resources:
     break_locus:
         mem_mb: 8000 + attempt * 2048
+    run_cojo:
+        mem_mb: 8000 + attempt * 2048
