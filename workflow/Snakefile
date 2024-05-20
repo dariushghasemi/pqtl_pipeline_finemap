@@ -1,6 +1,5 @@
 # import required libraries
 from snakemake.utils import min_version
-from pathlib import Path
 
 
 ##### set minimum snakemake version #####
@@ -81,8 +80,7 @@ rule run_cojo:
     log:
         ws_path("logs/cojo/{seqid}.log"),
     resources:
-        mem_mb=8000,
-        runtime=60,
+        runtime=lambda wc, attempt: attempt * 60,
     shell:
         """
         Rscript=`ls /conda-envs/*/bin/Rscript`;
