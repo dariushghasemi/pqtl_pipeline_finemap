@@ -11,10 +11,8 @@ labels:
   chr_label: "CHR"
   pos_label: "POS"
 
-#study_id: "study_id"
-
 thresholds:
-  p1: 5e-08
+  p1: 1.256913021618904e-11
   p2: 1e-06
   p3: 1e-04
   p4: 1e-06
