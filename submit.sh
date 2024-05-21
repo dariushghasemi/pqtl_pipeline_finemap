@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name region_def
-#SBATCH --output %j_region_def_meta.log
+#SBATCH --job-name locojo
+#SBATCH --output %j_locus_meta.log
 #SBATCH --partition cpuq
 #SBATCH --cpus-per-task 1
 #SBATCH --mem 1G
