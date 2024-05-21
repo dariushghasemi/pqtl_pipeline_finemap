@@ -18,7 +18,8 @@ include: "rules/common.smk"
 
 rule all:
     input:
-        expand(ws_path("logs/cojo/{seqid}.log"), seqid=analytes.seqid),
+        #expand(ws_path("cojo/{seqid}"), seqid=analytes.seqid),
+        expand(ws_path("break/{seqid}_loci.csv"), seqid=analytes.seqid)
 
 
 rule break_locus:
