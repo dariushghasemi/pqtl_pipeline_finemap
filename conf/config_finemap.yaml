@@ -1,11 +1,17 @@
-path_base: "/home/dariush.ghasemi/projects/pqtl_pipeline_finemap"
-path_code: "/home/dariush.ghasemi/projects/pqtl_pipeline_finemap/workflow/scripts/"
+
+path_loci: "/scratch/dariush.ghasemi/projects/pqtl_pipeline_finemap/results/meta/break"
 #path_pwas: "/exchange/healthds/pQTL/results/INTERVAL_OLD/harmonized_sumstats/outputs"
-path_pwas: "/exchange/healthds/pQTL/results/INTERVAL/chunk_1083/chunk_1083_output/chunk_1083/results/gwas"
-path_geno: "/home/dariush.ghasemi/projects/pqtl_pipeline_ldsc/output/plinkFormat/impute_recoded_selected_sample_filter_hq_var_chr"
+#path_intv: "/exchange/healthds/pQTL/results/INTERVAL/chunk_6843/chunk_6843_output/chunk_6843/results/gwas"
+#path_meta: "/exchange/healthds/pQTL/results/META_CHRIS_INTERVAL/qced_sumstats_digits/output/"
+path_geno: "/scratch/dariush.ghasemi/genotype/imputed/plinkFormat/impute_recoded_selected_sample_filter_hq_var_chr"
 path_mapping: "/exchange/healthds/pQTL/results/INTERVAL/qced_sumstats/table.snp_mapping.tsv.gz"
-#sample_seqids: ["7930.3", "13124.20", "7935.26", "7943.16", "19819.7", "5124.69"]
-sample_seqids: ["13615.60"] #"12708.91", "12730.3"
+
+path_code: "scripts/"
+path_workspace: "output/"
+path_sumstats: "../conf/path_plots.txt"
+
+#sample_seqids: ["7930.3", "13124.20", "7935.26", "7943.16", "19819.7", "5124.69", "12708.91", "12730.3", "13615.60"]
+
 
 thresholds:
   p1: 5e-08
