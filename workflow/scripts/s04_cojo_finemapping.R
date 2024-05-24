@@ -81,7 +81,7 @@ cat(paste0("done!\n\nTime to draw regional association plot...\n"))
 # Plot conditioned GWAS sum stats
 dir.create(paste0(opt$outdir), recursive = TRUE)
 #pdf(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.pdf"), height=3.5*nrow(conditional.dataset$ind.snps), width=10) ### have the original loci boundaries in the name, or the slightly enlarged ones?
-png(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.png"), res = 300, units = "in", height=3.5*nrow(conditional.dataset$ind.snps)+2, width=10)
+png(paste0(opt$study_id, "_locus_chr", locus_name, "_conditioned_loci.png"), res = 300, units = "in", height=3.5*nrow(conditional.dataset$ind.snps)+4, width=10)
 plot.cojo.ht(conditional.dataset) + patchwork::plot_annotation(paste("Locus chr", locus_name))
 dev.off()
 

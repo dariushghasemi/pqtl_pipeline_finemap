@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name loop_abf
-#SBATCH --output %j_loop_abf.log
+#SBATCH --output %j_plots.log
 #SBATCH --partition cpuq #-interactive
 #SBATCH --cpus-per-task 1
 #SBATCH --mem 4G

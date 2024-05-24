@@ -6,80 +6,67 @@ import pandas as pd
 # read the configuration file
 configfile: "../conf/config_finemap.yaml"
 
-# introduce the wildcard variable
-seqid = config["sample_seqids"]
 
-# define teh functions generating files' path
-def ws_path(file_path):
-    return str(pjoin(config.get("path_base"), file_path))
-
-def db_path(file_path):
-    return str(Path(config.get("path_data"), file_path))
-
-def ss_path(file_path):
-    return str(Path(config.get("path_pwas"), file_path))
+include: "rules/common.smk"
 
 
 rule all:
     input:
-        expand(
-            ws_path("logs/cojo/seq.{i}.log"), 
-            #ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-            i = seqid
-        )
+        expand(ws_path("logs/cojo/{seqid}.log"), seqid=analytes.seqid),
+        #expand(ws_path("output/break/{seqid}_loci.csv"), seqid=analytes.seqid)
 
 
-rule break_locus:
-    input:
-        gwas = ss_path("seq.{i}.gwas.regenie.gz")
-        #ifile = expand(ws_path("output/align/seq.{i}/seq.{i}_chr{chrom}_dataset_aligned.tsv.gz"), i = seqid, chrom = range(1, 23))
-    output:
-        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv"),
-    params:
-        codes = config.get("path_code"),
-        ifile = ss_path("seq.{i}"),
-        ofile = ws_path("output/break/seq.{i}/seq.{i}"),
-        seque = "seq.{i}",
-        p1    = config.get('thresholds').get('p1'),
-        p2    = config.get('thresholds').get('p2'),
-        hole  = config.get('thresholds').get('hole')
-    log:
-        ws_path("logs/break/seq.{i}.log")
-    resources:
-        mem_mb = 8000, runtime = 60
-    shell:
-        """
-        source ~/.bashrc && \
-        conda activate r_finemap &&  \
-        Rscript scripts/s03_locus_breaker.R  \
-            --pipeline_path {params.codes}  \
-            --input {input.gwas}  \
-            --study_id  {params.ofile}  \
-            --p_thresh1 {params.p1}  \
-            --p_thresh2 {params.p2}  \
-            --hole   {params.hole} \
-            --outdir {params.ofile}  2> {log}
-        """
+#rule break_locus:
+#    input:
+#        gwas = ss_path("{seqid}.gwas.regenie.gz")
+#    output:
+#        loci = ws_path("output/break/{seqid}_loci.tsv"),
+#    params:
+#        codes = config.get("path_code"),
+#        ifile = ss_path("{seqid}"),
+#        ofile = ws_path("output/break/{seqid}"),
+#        seque = "{seqid}",
+#        p1    = config.get('thresholds').get('p1'),
+#        p2    = config.get('thresholds').get('p2'),
+#        hole  = config.get('thresholds').get('hole')
+#    log:
+#        ws_path("logs/break/{seqid}.log")
+#    resources:
+#        mem_mb = 8000, runtime = 60
+#    shell:
+#        """
+#        source ~/.bashrc && \
+#        conda activate r_finemap &&  \
+#        Rscript scripts/s03_locus_breaker.R  \
+#            --pipeline_path {params.codes}  \
+#            --input {input.gwas}  \
+#            --study_id  {params.ofile}  \
+#            --p_thresh1 {params.p1}  \
+#            --p_thresh2 {params.p2}  \
+#            --hole   {params.hole} \
+#            --outdir {params.ofile}  2> {log}
+#        """
 
 
 rule run_cojo:
     input:
-        gwas = ss_path("seq.{i}.gwas.regenie.gz"),
-        loci = ws_path("output/break/seq.{i}/seq.{i}_loci.tsv")
+        #gwas = ss_path("{seqid}.gwas.regenie.gz"), #.gwaslab.tsv.gz
+        gwas = get_sumstats,
+        loci = sc_path("{seqid}_loci.tsv")
     output:
-        odir = directory(ws_path("output/cojo/seq.{i}/")),
-        log  = ws_path("logs/cojo/seq.{i}.log")
+        odir = directory(ws_path("output/cojo/{seqid}/")),
+        log  = ws_path("logs/cojo/{seqid}.log")
     params:
         codes = config.get("path_code"),
         geno  = config.get("path_geno"),
         mapping = config.get("path_mapping"),
-        ofile = ws_path("output/cojo/seq.{i}/seq.{i}"),
+        ofile = ws_path("output/cojo/{seqid}/{seqid}"),
         ppp   = config.get('thresholds').get('ppp'),
         p3    = config.get('thresholds').get('p3'),
         p4    = config.get('thresholds').get('p4'),
         maf   = config.get('thresholds').get('maf')
     log:
-        ws_path("logs/cojo/seq.{i}.log")
+        ws_path("logs/cojo/{seqid}.log")
     resources:
         mem_mb = 16000, runtime = 60
     run:

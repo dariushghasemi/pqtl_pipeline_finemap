@@ -1,0 +1,7 @@
+/exchange/healthds/pQTL/results/INTERVAL/chunk_6663/chunk_6663_output/chunk_6663/results/gwas/seq.9231.23.gwas.regenie.gz
+/exchange/healthds/pQTL/results/INTERVAL/chunk_3063/chunk_3063_output/chunk_3063/results/gwas/seq.21563.3.gwas.regenie.gz
+/exchange/healthds/pQTL/results/INTERVAL/chunk_4143/chunk_4143_output/chunk_4143/results/gwas/seq.25060.18.gwas.regenie.gz
+/exchange/healthds/pQTL/results/INTERVAL/chunk_4863/chunk_4863_output/chunk_4863/results/gwas/seq.3640.14.gwas.regenie.gz
+/exchange/healthds/pQTL/results/INTERVAL/chunk_5043/chunk_5043_output/chunk_5043/results/gwas/seq.4564.2.gwas.regenie.gz
+/exchange/healthds/pQTL/results/INTERVAL/chunk_5763/chunk_5763_output/chunk_5763/results/gwas/seq.6947.4.gwas.regenie.gz
+/exchange/healthds/pQTL/results/INTERVAL/chunk_6303/chunk_6303_output/chunk_6303/results/gwas/seq.8240.207.gwas.regenie.gz
