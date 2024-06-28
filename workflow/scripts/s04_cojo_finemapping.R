@@ -64,7 +64,6 @@ opt$end    <- as.numeric(opt$end) + 100000
 # to avoid killing plink job, reduce resources
 opt$plink2_mem <- as.numeric(opt$plink2_mem) - 512
 
-
 # reading GWAS and mapping files
 dataset_gwas <- fread(opt$dataset_gwas, data.table=F)
 #dataset_map  <- fread(opt$mapping, data.table=F)
@@ -86,11 +85,12 @@ dataset_gwas <- dataset_gwas %>%
 
 cat(paste0("done."))
 
-###############
+#########################################
 # Perform cojo
-###############
+#########################################
 
 cat(paste0("\nRun COJO...\n\n"))
+
 # Break dataframe in list of single rows
 conditional.dataset <- cojo.ht(
   D = dataset_gwas,
@@ -127,11 +127,12 @@ dev.off()
 
 cat("created!")
 
-####################
+#########################################
 # Locus breaker BIS
-###################
+#########################################
 
 cat(paste0("\nApply locus breaker and widen the locus..."))
+
 ### Repeat only on dataset that have been conditioned!!
 conditional.dataset$results <- lapply(conditional.dataset$results, function(x){
 
@@ -153,6 +154,7 @@ conditional.dataset$results <- lapply(conditional.dataset$results, function(x){
     x %>% filter(bp >= new_bounds$start & bp <= new_bounds$end)
   }
 })
+cat(paste0("done!\n\n"))
 
 cat(paste0("done."))
 
@@ -162,21 +164,22 @@ conditional.dataset$results <- conditional.dataset$results %>% discard(is.null)
 saveRDS(conditional.dataset, file=paste0(opt$outdir, "/conditional_data_", locus_name, "_up.rds"))
 
 
-
-#############
+#########################################
 # Finemapping
-#############
+#########################################
 
 cat("\nBegin to fine-map the locus...")
+
 # Perform finemapping of each conditional dataset
 finemap.res <- lapply(conditional.dataset$results, function(x){
   finemap.cojo(x, cs_threshold=opt$cs_thresh)
 })
+cat(paste0("done!\n\n"))
 
 cat(paste0("done."))
 
 #########################################
-# Organise list of what needs to be saved
+# Organize list of what needs to be saved
 #########################################
 
 cat("\nSaving independent signals...")
@@ -186,6 +189,7 @@ if(opt$phenotype_id=="full") { core_file_name <- gsub("_full", "", core_file_nam
 fwrite(conditional.dataset$ind.snps, paste0(core_file_name, "_locus_chr", locus_name,"_ind_snps.tsv"), sep="\t", quote=F, na=NA)
 
 cat("done.\nSave other lABF results...")
+
 ## Save lABF of each conditional dataset
 lapply(finemap.res, function(x){
   sp_file_name <- paste0(core_file_name, "_", unique(x$cojo_snp), "_locus_chr", locus_name)
@@ -208,3 +212,4 @@ lapply(finemap.res, function(x){
 
 cat("done!\n\n")
 cat("Run-COJO rule is finished!\n")
+

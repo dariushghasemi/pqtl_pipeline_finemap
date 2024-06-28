@@ -15,10 +15,13 @@ output/
 *.pdf
 *.png
 *.RData
+*.rds
 *test*.*
 michele.smk
 tuto.smk
 test/
+
+
 dag.svg
 results/
 .cache/
@@ -42,3 +45,5 @@ plink/
 16_69449233_73516227/
 19_54652217_54863080/
 6_31305620_32886291/
+
+lz_plot/

@@ -24,7 +24,6 @@ suppressMessages(library(dplyr))
 
 
 
-
 ### locus.breaker
 locus.breaker.p <- function(
     res,
@@ -37,7 +36,7 @@ locus.breaker.p <- function(
 
   res <- as.data.frame(res)
   res = res[order(as.numeric(res[, chr.label]), as.numeric(res[,pos.label])), ]
-  res = res[which(res[, p.label] > p.limit), ]
+  res = res[which(res[, p.label] < p.limit), ]
   trait.res = c()
 
   for(j in unique(res[,chr.label])) {
@@ -57,9 +56,9 @@ locus.breaker.p <- function(
             res.loc = res.chr[(gaps[k - 1] + 1):(gaps[k]),
             ]
           }
-          if (max(res.loc[, p.label]) > p.sig) {
-            start.pos = max(res.loc[, pos.label], na.rm = T)
-            end.pos = min(res.loc[, pos.label], na.rm = T)
+          if (min(res.loc[, p.label]) < p.sig) {
+            start.pos = min(res.loc[, pos.label], na.rm = T)
+            end.pos = max(res.loc[, pos.label], na.rm = T)
             chr = j
             best.snp = res.loc[which.max(res.loc[, p.label]),
             ]
@@ -69,9 +68,9 @@ locus.breaker.p <- function(
         }
       } else {
         res.loc = res.chr
-        if (min(res.loc[, p.label]) > p.sig) {
-          start.pos = max(res.loc[, pos.l.abel], na.rm = T)
-          end.pos = min(res.loc[, pos.label], na.rm = T)
+        if (min(res.loc[, p.label]) < p.sig) {
+          start.pos = min(res.loc[, pos.label], na.rm = T)
+          end.pos = max(res.loc[, pos.label], na.rm = T)
           chr = j
           best.snp = res.loc[which.max(res.loc[, p.label]),
           ]
@@ -82,9 +81,9 @@ locus.breaker.p <- function(
     }
     else if (nrow(res.chr) == 1) {
       res.loc = res.chr
-      if (max(res.loc[, p.label]) > p.sig) {
-        start.pos = max(res.loc[, pos.label], na.rm = T)
-        end.pos = min(res.loc[, pos.label], na.rm = T)
+      if (min(res.loc[, p.label]) < p.sig) {
+        start.pos = min(res.loc[, pos.label], na.rm = T)
+        end.pos = max(res.loc[, pos.label], na.rm = T)
         chr = j
         best.snp = res.loc[which.max(res.loc[, p.label]),
         ]
@@ -186,7 +185,86 @@ locus.breaker <- function(
 }
 
 
+### locus.breaker: works with -log10p
+locus.breaker <- function(
+    res,
+    p.sig = -log10(5e-08),
+    p.limit = -log10(1e-05),
+    hole.size = 250000,
+    p.label = "LOG10P",
+    chr.label = "CHROM",
+    pos.label = "GENPOS"){
 
+
+  res <- as.data.frame(res)
+  res = res[order(as.numeric(res[, chr.label]), as.numeric(res[,pos.label])), ]
+  res = res[which(res[, p.label] > p.limit), ]
+  trait.res = c()
+
+
+  for(j in unique(res[,chr.label])) {
+    res.chr = res[which(res[, chr.label] == j), ]
+    if (nrow(res.chr) > 1) {
+      holes = res.chr[, pos.label][-1] - res.chr[, pos.label][-length(res.chr[,pos.label])]
+      gaps = which(holes > hole.size)
+      if (length(gaps) > 0) {
+        for (k in 1:(length(gaps) + 1)) {
+          if (k == 1) {
+            res.loc = res.chr[1:(gaps[k]), ]
+          }
+          else if (k == (length(gaps) + 1)) {
+            res.loc = res.chr[(gaps[k - 1] + 1):nrow(res.chr),
+            ]
+          } else {
+            res.loc = res.chr[(gaps[k - 1] + 1):(gaps[k]),
+            ]
+          }
+          if (max(res.loc[, p.label]) > p.sig) {
+            start.pos = min(res.loc[, pos.label], na.rm = T)
+            end.pos = max(res.loc[, pos.label], na.rm = T)
+            chr = j
+            best.snp = res.loc[which.max(res.loc[, p.label]),
+            ]
+            line.res = c(chr, start.pos, end.pos, unlist(best.snp))
+            trait.res = rbind(trait.res, line.res)
+          }
+        }
+      } else {
+        res.loc = res.chr
+        if (max(res.loc[, p.label]) > p.sig) {
+          start.pos = min(res.loc[, pos.label], na.rm = T)
+          end.pos = max(res.loc[, pos.label], na.rm = T)
+          chr = j
+          best.snp = res.loc[which.max(res.loc[, p.label]),
+          ]
+          line.res = c(chr, start.pos, end.pos, unlist(best.snp))
+          trait.res = rbind(trait.res, line.res)
+        }
+      }
+    }
+    else if (nrow(res.chr) == 1) {
+      res.loc = res.chr
+      if (max(res.loc[, p.label]) > p.sig) {
+        start.pos = min(res.loc[, pos.label], na.rm = T)
+        end.pos = max(res.loc[, pos.label], na.rm = T)
+        chr = j
+        best.snp = res.loc[which.max(res.loc[, p.label]),
+        ]
+        line.res = c(chr, start.pos, end.pos, unlist(best.snp))
+        trait.res = rbind(trait.res, line.res)
+      }
+    }
+  }
+  if(!is.null(trait.res)){
+    trait.res = as.data.frame(trait.res, stringsAsFactors = FALSE)
+    trait.res = trait.res[, -(which(names(trait.res) == chr.label))]
+    names(trait.res)[1:3] = c("chr", "start", "end")
+    rownames(trait.res) <- NULL
+  }
+  return(trait.res)
+}
+
+#Saving the LD structure of 1 independent signals to [wMTN5Enzsjvd67MgL84B_step1.ldr.cojo] ...
 ### cojo.ht ###
 ### Performs --cojo-slct first to identify all independent SNPs and --cojo-cond then to condition upon identified SNPs
 cojo.ht=function(D=dataset_gwas
@@ -242,6 +320,7 @@ cojo.ht=function(D=dataset_gwas
       mutate(FREQ=ifelse(REF==!!ea.label, FreqREF, (1-FreqREF))) %>% # NO need to compare the alleles -- if use FREQ or FreqREF rather than !!eaf.label, we get empty bC, bC_SE and pC in COJO *_step1.cma.cojo
       #dplyr::select("SNP","ALLELE0","ALLELE1","FREQ","BETA","SE","LOG10P","N", any_of(c("snp_map","type","sdY","s")))
       dplyr::select("SNP",!!ea.label,!!oa.label,FREQ,!!beta.label,!!se.label,!!p.label,!!n.label, any_of(c("snp_map","type","sdY","s")))
+
   fwrite(D,file=paste0(random.number,"_sum.txt"), row.names=F,quote=F,sep="\t", na=NA)
   cat("\n\nMerge with LD reference...done.\n\n")
 
@@ -334,6 +413,7 @@ finemap.cojo <- function(D, cs_threshold=0.99){
 # Format input
     D <- D %>%
       dplyr::mutate(varbeta=bC_se^2) %>%
+      #dplyr::select("snp_map","Chr","bp","bC","varbeta","n","pC","freq","type",any_of(c("sdY","s"))) %>%
       dplyr::select("snp_map","Chr","bp","bC","varbeta","n","pC","freq","type",any_of(c("sdY","s"))) %>%
       rename("snp"="snp_map","chr"="Chr","position"="bp","beta"="bC","N"="n","pvalues"="pC","MAF"="freq")
 
@@ -361,6 +441,15 @@ finemap.cojo <- function(D, cs_threshold=0.99){
   return(cs)
 }
 
+
+my_theme <- function(...){
+  theme(
+  legend.position = c(.15, .95),
+  axis.title.x = element_blank(),
+  axis.title = element_text(size = 14, face = 2),
+  axis.text =  element_text(size = 12, face = 2)
+  )
+}
 
 my_theme <- function(...){
   theme(
@@ -407,6 +496,7 @@ plot.cojo.ht=function(cojo.ht.obj){
   }
   (p3)
 }
+
 
 
 

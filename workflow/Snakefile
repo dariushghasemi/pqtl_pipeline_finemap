@@ -23,6 +23,7 @@ rule all:
         ws_path("break/collected_loci_excluding_mhc.csv")
 
 
+
 rule break_locus:
     input:
         gwas=get_sumstats,
